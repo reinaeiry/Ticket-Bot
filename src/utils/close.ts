@@ -185,7 +185,7 @@ export async function close(
 				.setDisabled(deleteTicket)
 		);
 		const locale = client.locales;
-		// JSON.stringify().slice(1, -1) を使って安全にエスケープする（外側の引用符を除去しつつJSON特殊文字はエスケープ済み）
+		// Use JSON.stringify().slice(1, -1) to safely escape (strips outer quotes while keeping JSON special chars escaped)
 		const safeTicketCount = JSON.stringify(ticket.id.toString()).slice(1, -1);
 		const safeReason = JSON.stringify(
 			(ticket.closereason ?? client.locales.getSubValue("other", "noReasonGiven")).replace(/[\n\r]/g, "\\n")
