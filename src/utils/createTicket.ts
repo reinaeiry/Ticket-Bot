@@ -40,9 +40,9 @@ export const createTicket = async (
 		let allReasons = "";
 
 		if (typeof reasons === "object") {
-			reasons.forEach(async (r) => {
+			for (const [, r] of reasons) {
 				reason.push(r.value);
-			});
+			}
 			allReasons = reason.map((r, i) => `Question ${i + 1}: ${r}`).join(", ");
 		}
 		if (typeof reasons === "string") allReasons = reasons;
