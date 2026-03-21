@@ -114,12 +114,12 @@ export async function close(
 			ViewChannel: false
 		})
 		.catch((e: unknown) => console.log(e));
-	invited.forEach(async (user) => {
-		(interaction.channel as TextChannel | null)?.permissionOverwrites
+	for (const user of invited) {
+		await (interaction.channel as TextChannel | null)?.permissionOverwrites
 			.edit(user, {
 				ViewChannel: false
 			});
-	});
+	}
 
 	interaction
 		.editReply({
@@ -185,14 +185,20 @@ export async function close(
 				.setDisabled(deleteTicket)
 		);
 		const locale = client.locales;
+		// Use JSON.stringify().slice(1, -1) to safely escape (strips outer quotes while keeping JSON special chars escaped)
+		const safeTicketCount = JSON.stringify(ticket.id.toString()).slice(1, -1);
+		const safeReason = JSON.stringify(
+			(ticket.closereason ?? client.locales.getSubValue("other", "noReasonGiven")).replace(/[\n\r]/g, "\\n")
+		).slice(1, -1);
+		const safeCloserName = JSON.stringify(interaction.user.tag).slice(1, -1);
 		interaction.channel
 			?.send({
 				embeds: [
 					JSON.parse(
 						JSON.stringify(locale.getSubRawValue("embeds", "ticketClosed"))
-							.replace("TICKETCOUNT", ticket.id.toString())
-							.replace("REASON", (ticket.closereason ?? client.locales.getSubValue("other", "noReasonGiven")).replace(/[\n\r]/g, "\\n"))
-							.replace("CLOSERNAME", interaction.user.tag)
+							.replace("TICKETCOUNT", safeTicketCount)
+							.replace("REASON", safeReason)
+							.replace("CLOSERNAME", safeCloserName)
 					)
 				],
 				components: [row]
