@@ -135,7 +135,9 @@ export async function close(
 	let transcriptUrl = "";
 	let transcriptId = "";
 
-	if (client.config.closeOption.createTranscript) {
+	const isBanAppeal = ticketType?.codeName === "ban-appeal";
+
+	if (client.config.closeOption.createTranscript && !isBanAppeal) {
 		try {
 			const messages = await fetchAll();
 			const creatorUser = await client.users.fetch(creator).catch(() => null);
@@ -290,7 +292,7 @@ export async function close(
 		setTimeout(() => interaction.channel?.delete().catch((e) => console.log(e)), delayMs);
 	}
 
-	if (!client.config.closeOption.dmUser) return;
+	if (!client.config.closeOption.dmUser || isBanAppeal) return;
 	const footer = locale.getSubValue("embeds", "ticketClosedDM", "footer", "text");
 	const ticketClosedDMEmbed = new EmbedBuilder({
 		color: 0
