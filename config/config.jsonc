@@ -271,7 +271,7 @@
 				},
 				{
 					"label": "GM Acknowledgement",
-					"placeholder": "As a GM you cannot play the server as a regular player. Explain why you accept this and what you bring to the team.",
+					"placeholder": "You cannot play as a regular player as a GM. Why do you accept this?",
 					"style": "PARAGRAPH",
 					"maxLength": 4000
 				}
