@@ -4,14 +4,14 @@
 			"title": "Відкрити тікет",
 			"description": "Натисніть на кнопку щоб відкрити тікет",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketOpened": {
 			"title": "Тікет CATEGORYNAME",
 			"description": "Персонал надасть відповідь якомога швидше!",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketClosed": {
@@ -22,7 +22,7 @@
 			"title": "Тікет закрито",
 			"description": "Тікет n°TICKETCOUNT був закритий користувачем CLOSERNAME з наступної причини: `REASON`\n\nОсь транскрипція історії листування: TRANSCRIPTURL",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		}
 	},

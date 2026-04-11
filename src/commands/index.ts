@@ -13,6 +13,7 @@ import BanAppealCategoryOpenCommand from "./banappealcategoryopen";
 import ClaimedCategoryCommand from "./claimedcategory";
 import SetRoleCommand from "./setrole";
 import SetClosedDelayCommand from "./setcloseddelay";
+import GmAppCategoryOpenCommand from "./gmappcategoryopen";
 
 export {
 	AddCommand,
@@ -30,4 +31,5 @@ export {
 	ClaimedCategoryCommand,
 	SetRoleCommand,
 	SetClosedDelayCommand,
+	GmAppCategoryOpenCommand,
 };

@@ -231,6 +231,51 @@
 					"maxLength": 4000
 				}
 			]
+		},
+		{
+			"codeName": "gm-application",
+			"name": "GM Application",
+			"description": "Apply to become a Gamemaster",
+			"emoji": "📋",
+			"color": "#f1c40f",
+			"categoryId": "PLACEHOLDER",
+			"ticketNameOption": "app-TICKETCOUNT-USERNAME",
+			"customDescription": "**Gamemaster Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Prior Experience:** REASON3\n**Hours on Server:** REASON4\n**Acknowledgement:** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": [],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Prior admin/GM experience",
+					"placeholder": "List any prior experience moderating or GMing servers",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "How many hours do you have on our servers?",
+					"placeholder": "Approximate total hours",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "GM Acknowledgement",
+					"placeholder": "Type YES to confirm you understand that as a GM you cannot play as a regular player",
+					"style": "SHORT",
+					"maxLength": 10
+				}
+			]
 		}
 	],
 	"ticketNameOption": "ticket-TICKETCOUNT-USERNAME",

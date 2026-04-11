@@ -4,14 +4,14 @@
 			"title": "Otevřít ticket",
 			"description": "Kliknutím na tlačítko otevřete ticket",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketOpened": {
 			"title": "Ticket CATEGORYNAME",
 			"description": "Náš tým vám brzy odpoví!",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketClosed": {
@@ -22,7 +22,7 @@
 			"title": "Ticket byl uzavřen",
 			"description": "Ticket n°TICKETCOUNT byl uzavřen. Uzavřel ho CLOSERNAME z důvodu: `REASON`\n\nZde máš přepis ticketu: TRANSCRIPTURL",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		}
 	},

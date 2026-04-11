@@ -4,14 +4,14 @@
 			"title": "Ανοίξτε ένα ticket",
 			"description": "Κάντε κλικ στο κουμπί για να ξεκινήσετε το άνοιγμα ενός ticket",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketOpened": {
 			"title": "Ticket CATEGORYNAME",
 			"description": "Ένα προσωπικό θα σας απαντήσει το συντομότερο δυνατό!",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketClosed": {
@@ -22,7 +22,7 @@
 			"title": "Ticket έκλεισε",
 			"description": "Το ticket n°TICKETCOUNT έκλεισε από τον CLOSERNAME με τον εξής λόγο: `REASON`\n\nΑκολουθεί η μεταγραφή του ticket: TRANSCRIPTURL",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		}
 	},

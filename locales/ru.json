@@ -4,14 +4,14 @@
 			"title": "Открыть заявку",
 			"description": "Нажмите на кнопку, чтобы начать процесс открытия заявки",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketOpened": {
 			"title": "Заявка в категории CATEGORYNAME",
 			"description": "Сотрудник ответит вам как можно скорее!",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketClosed": {
@@ -22,7 +22,7 @@
 			"title": "Заявка закрыта",
 			"description": "Заявка №TICKETCOUNT была закрыта CLOSERNAME с следующей причиной: `REASON`\n\nВот транскрипт заявки: TRANSCRIPTURL",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		}
 	},

@@ -110,7 +110,7 @@ export const createTicket = async (
 				});
 		}
 
-		const footer = locale.getSubValue("embeds", "ticketOpened", "footer", "text").replace("ticket.pm", "");
+		const footer = locale.getSubValue("embeds", "ticketOpened", "footer", "text");
 		if (ticketType.color?.toString().trim() === "") ticketType.color = undefined;
 		const ticketOpenedEmbed = new EmbedBuilder({
 			color: 0
@@ -150,9 +150,7 @@ export const createTicket = async (
 						.replace("REASON9", reason[8])
 			)
 			.setFooter({
-				// Please respect the project by keeping the credits, (if it is too disturbing you can credit me in the "about me" of the bot discord)
-				text: `ticket.pm ${footer.trim() !== "" ? `- ${footer}` : ""}`, // Please respect the LICENSE :D
-				// Please respect the project by keeping the credits, (if it is too disturbing you can credit me in the "about me" of the bot discord)
+				text: footer,
 				iconURL: locale.getNoErrorSubValue("embeds", "ticketOpened", "footer", "iconUrl")
 			});
 
@@ -227,8 +225,9 @@ export const createTicket = async (
 					})
 					.catch((e) => console.log(e));
 
-				// Start evidence monitor for support tickets (not ban appeals)
-				if (ticketType.codeName !== "ban-appeal") {
+				// Start evidence monitor for support tickets only (skip ban appeals and applications)
+				const skipEvidence = ["ban-appeal", "gm-application"];
+				if (!skipEvidence.includes(ticketType.codeName)) {
 					startEvidenceMonitor(channel as TextChannel, client, interaction.user.id);
 				}
 

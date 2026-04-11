@@ -291,7 +291,7 @@ export async function close(
 	}
 
 	if (!client.config.closeOption.dmUser) return;
-	const footer = locale.getSubValue("embeds", "ticketClosedDM", "footer", "text").replace("ticket.pm", "");
+	const footer = locale.getSubValue("embeds", "ticketClosedDM", "footer", "text");
 	const ticketClosedDMEmbed = new EmbedBuilder({
 		color: 0
 	})

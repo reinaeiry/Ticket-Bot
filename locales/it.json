@@ -4,14 +4,14 @@
             "title": "Apri un ticket",
             "description": "Clicca sul pulsante per iniziare ad aprire un ticket",
             "footer": {
-                "text": "ticket.pm"
+                "text": "ReforgedZ"
             }
         },
         "ticketOpened": {
             "title": "Ticket CATEGORYNAME",
             "description": "Un membro dello staff ti risponderà il prima possibile!",
             "footer": {
-                "text": "ticket.pm"
+                "text": "ReforgedZ"
             }
         },
         "ticketClosed": {
@@ -23,7 +23,7 @@
             "title": "Ticket chiuso",
             "description": "Il ticket n°TICKETCOUNT è stato chiuso da CLOSERNAME con la seguente motivazione: `REASON`\n\nEcco la trascrizione del ticket: TRANSCRIPTURL",
             "footer": {
-                "text": "ticket.pm"
+                "text": "ReforgedZ"
             }
         }
     },

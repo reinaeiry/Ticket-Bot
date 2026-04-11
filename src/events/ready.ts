@@ -1,8 +1,5 @@
-import readline from "readline";
 import axios from "axios";
-import {client as WebSocketClient, connection} from "websocket";
 import {ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, EmbedBuilder, Message} from "discord.js";
-import os from "os";
 import {BaseEvent, ExtendedClient, SponsorType} from "../structure";
 import { resumePendingDeletes } from "../utils/pendingDeletes";
 
@@ -14,7 +11,6 @@ please check https://creativecommons.org/licenses/by/4.0 for more informations.
 */
 
 export default class ReadyEvent extends BaseEvent {
-	private connected = false;
 	constructor(client: ExtendedClient) {
 		super(client);
 	}
@@ -52,10 +48,7 @@ export default class ReadyEvent extends BaseEvent {
 			process.exit(0);
 		}
 		const locale = this.client.locales;
-		let footer = locale.getSubValue("embeds", "openTicket", "footer", "text").replace("ticket.pm", "");
-		// Please respect the project by keeping the credits, (if it is too disturbing you can credit me in the "about me" of the bot discord)
-		footer = `ticket.pm ${footer.trim() !== "" ? `- ${footer}` : ""}`; // Please respect the LICENSE :D
-		// Please respect the project by keeping the credits, (if it is too disturbing you can credit me in the "about me" of the bot discord)
+		const footer = locale.getSubValue("embeds", "openTicket", "footer", "text");
 		const embed = new EmbedBuilder({
 			...locale.getSubRawValue("embeds.openTicket") as object,
 			color: 0,
@@ -119,62 +112,7 @@ export default class ReadyEvent extends BaseEvent {
 		this.setStatus();
 		setInterval(()=>this.setStatus(), 9e5); // 15 minutes
 
-		readline.cursorTo(process.stdout, 0);
-		process.stdout.write(
-			`\x1b[0m🚀  The bot is ready! Logged in as \x1b[37;46;1m${this.client.user?.tag}\x1b[0m (\x1b[37;46;1m${this.client.user?.id}\x1b[0m)
-		\x1b[0m🌟  You can leave a star on GitHub: \x1b[37;46;1mhttps://github.com/Sayrix/ticket-bot \x1b[0m
-		\x1b[0m⛅  Host your ticket-bot by being a sponsor from 1$/month: \x1b[37;46;1mhttps://github.com/sponsors/Sayrix \x1b[0m\n`.replace(/\t/g, "")
-		);
-
-		const a = await axios.get("https://raw.githubusercontent.com/Sayrix/sponsors/main/sponsors.json").catch(() => {return;});
-		if (a) {
-			const sponsors: SponsorType[] = a.data;
-			const sponsorsList = sponsors
-				.map((s) => `\x1b]8;;https://github.com/${s.sponsor.login}\x1b\\\x1b[1m${s.sponsor.login}\x1b]8;;\x1b\\\x1b[0m`)
-				.join(", ");
-			process.stdout.write(`\x1b[0m💖  Thanks to our sponsors: ${sponsorsList}\n`);
-		}
-
-
-		if ((await this.client.prisma.config.findUnique({
-			where: {
-				key: "firstStart",
-			}
-		})) === null) {
-			await this.client.prisma.config.create({
-				data: {
-					key: "firstStart",
-					value: "true",
-				}
-			});
-
-			if(!this.client.config.minimalTracking) console.warn(`
-				PRIVACY NOTICES
-				-------------------------------
-				Telemetry is current set to full and the following information are sent to the server anonymously:
-				* Discord Bot's number of guilds & users
-				* Current Source Version
-				* NodeJS Version
-				* OS Version
-				* CPU version, name, core count, architecture, and model
-				* Current Process up-time
-				* System total ram and freed ram
-				* Client name and id
-				* Guild ID
-				-------------------------------
-				If you wish to minimize the information that are being sent, please set "minimalTracking" to true in the config
-		`.replace(/\t/g, ""));
-			else console.warn(`
-				PRIVACY NOTICES
-				-------------------------------
-				Minimal tracking has been enabled; the following information are sent anonymously:
-				* Current Source Version
-				* NodeJS Version
-				-------------------------------
-		`.replace(/\t/g, ""));
-		}
-
-		this.connect(this.client.config.showWSLog);
+		console.log(`\x1b[0m🚀  Bot ready! Logged in as \x1b[37;46;1m${this.client.user?.tag}\x1b[0m`);
 
 		this.client.deployCommands();
 	}
@@ -217,90 +155,6 @@ export default class ReadyEvent extends BaseEvent {
 		}
 	}
 
-	private connect(enableLog?: boolean): void {
-		if (this.connected) return;
-		const ws = new WebSocketClient();
-		ws.on("connectFailed", (e) => {
-			this.connected = false;
-			setTimeout(()=>this.connect(enableLog), Math.random() * 1e4);
-			if(enableLog)
-				console.log(`❌  WebSocket Error: ${e.toString()}`);
-		});
-
-		ws.on("connect", (connection) => {
-			connection.on("error", (e) => {
-				this.connected = false;
-				setTimeout(()=>this.connect(enableLog), Math.random() * 1e4);
-				if(enableLog)
-					console.log(`❌  WebSocket Error: ${e.toString()}`);
-			});
-
-			connection.on("close", (e) => {
-				this.connected = false;
-				setTimeout(()=>this.connect(enableLog), Math.random() * 1e4);
-				if(enableLog)
-					console.log(`❌  WebSocket Error: ${e.toString()}`);
-			});
-
-			this.connected = true;
-			if(enableLog)
-				console.log("✅  Connected to WebSocket server.");
-			this.telemetry(connection);
-
-			setInterval(() => {
-				this.telemetry(connection);
-			}, 120_000);
-		});
-
-		ws.connect("wss://ws.ticket.pm", "echo-protocol");
-
-	}
-
-	private telemetry(connection: connection) {
-		let fullInfo: {[key:string]: string | number | {[key:string]: string | number}} = {
-			os: os.platform(),
-			osVersion1: os.release(),
-			osVersion2: os.version(),
-			uptime: process.uptime(),
-			ram: {
-				total: os.totalmem(),
-				free: os.freemem()
-			},
-			cpu: {
-				model: os.cpus()[0].model,
-				cores: os.cpus().length,
-				arch: os.arch()
-			}
-		};
-		let moreInfo: {[key:string]: string | undefined} = {
-			clientName: this.client?.user?.tag,
-			clientId: this.client?.user?.id,
-			guildId: this.client?.config?.guildId
-		};
-		// Minimal tracking enabled, remove those info from being sent
-		if(this.client.config.minimalTracking) {
-			fullInfo = {};
-			moreInfo = {};
-		}
-		connection.sendUTF(
-			JSON.stringify({
-				type: "telemetry",
-				data: {
-					stats: {
-						guilds: this.client?.guilds?.cache?.size,
-						users: this.client?.users?.cache?.size
-					},
-					infos: {
-						// eslint-disable-next-line @typescript-eslint/no-var-requires
-						ticketbotVersion: require("../../package.json").version,
-						nodeVersion: process.version,
-						...fullInfo
-					},
-					...moreInfo
-				}
-			})
-		);
-	}
 }
 
 /*

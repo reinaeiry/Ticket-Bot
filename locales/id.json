@@ -4,14 +4,14 @@
             "title": "Buka tiket",
             "description": "Klik tombol untuk mulai membuka tiket",
             "footer": {
-                "text": "ticket.pm"
+                "text": "ReforgedZ"
             }
         },
         "ticketOpened": {
             "title": "Tiket CATEGORYNAME",
             "description": "Staff akan membalas Anda sesegera mungkin!",
             "footer": {
-                "text": "ticket.pm"
+                "text": "ReforgedZ"
             }
         },
         "ticketClosed": {
@@ -23,7 +23,7 @@
             "title": "Tiket ditutup",
             "description": "Tiket nomor TICKETCOUNT telah ditutup oleh CLOSERNAME dengan alasan berikut: `REASON`\n\nBerikut transkrip tiket: TRANSCRIPTURL",
             "footer": {
-                "text": "ticket.pm"
+                "text": "ReforgedZ"
             }
         }
     },
