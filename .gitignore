@@ -3,3 +3,4 @@ dist
 .env
 *.db
 transcript-server/
+config/config.jsonc
