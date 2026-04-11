@@ -23,7 +23,8 @@ export default class SetClosedDelayCommand extends BaseCommand {
 		const member = interaction.member as GuildMember | null;
 		if (
 			!member?.roles.cache.some((r) =>
-				this.client.config.rolesWhoHaveAccessToTheTickets.includes(r.id)
+				this.client.config.rolesWhoHaveAccessToTheTickets.includes(r.id) ||
+				this.client.config.ticketTypes.some((t) => t.staffRoles?.includes(r.id))
 			)
 		)
 			return interaction.reply({ content: "You do not have permission to use this command.", ephemeral: true });

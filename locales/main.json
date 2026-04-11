@@ -2,7 +2,7 @@
 	"embeds": {
 		"openTicket": {
 			"title": "ReforgedZ Support",
-			"description": "Click the button below to open a support ticket or submit a ban appeal.",
+			"description": "Click the button below to open a support ticket, submit a ban appeal, or apply for Gamemaster.",
 			"footer": {
 				"text": "ReforgedZ"
 			}
