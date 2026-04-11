@@ -216,7 +216,13 @@ export const createTicket = async (
 					})
 					.then(); // Again why tf do I need .then()?!?!?
 				msg.pin().then(() => {
-					msg.channel.bulkDelete(1);
+					msg.channel.bulkDelete(1).then(() => {
+						// Start evidence monitor AFTER pin cleanup so the embed doesn't get deleted
+						const skipEvidence = ["ban-appeal", "gm-application"];
+						if (!skipEvidence.includes(ticketType.codeName)) {
+							startEvidenceMonitor(channel as TextChannel, client, interaction.user.id);
+						}
+					});
 				});
 				interaction
 					.editReply({
@@ -224,12 +230,6 @@ export const createTicket = async (
 						components: []
 					})
 					.catch((e) => console.log(e));
-
-				// Start evidence monitor for support tickets only (skip ban appeals and applications)
-				const skipEvidence = ["ban-appeal", "gm-application"];
-				if (!skipEvidence.includes(ticketType.codeName)) {
-					startEvidenceMonitor(channel as TextChannel, client, interaction.user.id);
-				}
 
 				resolve(true);
 			})
