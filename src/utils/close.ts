@@ -96,16 +96,16 @@ export async function close(
 	const creator = ticket.creator;
 	const invited = JSON.parse(ticket.invited) as string[];
 
-	interaction.channel.permissionOverwrites
-		.edit(creator, {
-			ViewChannel: false
-		})
-		.catch((e: unknown) => console.log(e));
-	for (const user of invited) {
-		await (interaction.channel as TextChannel | null)?.permissionOverwrites
-			.edit(user, {
-				ViewChannel: false
-			});
+	// Lock the channel - nobody sees closed tickets except the bot
+	if (interaction.guild) {
+		const overwrites: any[] = [
+			{ id: interaction.guild.roles.everyone.id, deny: ["ViewChannel"] },
+		];
+		// Keep bot access so it can still send messages and delete the channel
+		if (client.user) {
+			overwrites.push({ id: client.user.id, allow: ["ViewChannel", "SendMessages", "ManageChannels"] });
+		}
+		await interaction.channel.permissionOverwrites.set(overwrites).catch((e: unknown) => console.log(e));
 	}
 
 	interaction
