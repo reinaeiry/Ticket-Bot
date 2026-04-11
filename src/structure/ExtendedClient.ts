@@ -7,7 +7,7 @@ import {
 	AddCommand, MassAddCommand, ClaimCommand, CloseCommand, RemoveCommand, RenameCommand, clearDM,
 	Na1CategoryOpenCommand, Na2CategoryOpenCommand, Eu1CategoryOpenCommand, Eu2CategoryOpenCommand,
 	BanAppealCategoryOpenCommand, ClaimedCategoryCommand, SetRoleCommand, SetClosedDelayCommand,
-	GmAppCategoryOpenCommand,
+	GmAppCategoryOpenCommand, CloseCategoryCommand,
 } from "../commands";
 import {InteractionCreateEvent, ReadyEvent, MessageCreateEvent} from "../events";
 import {jsonc} from "jsonc";
@@ -46,6 +46,7 @@ export default class ExtendedClient extends Client {
 			[SetRoleCommand.data.name, new SetRoleCommand(this)],
 			[SetClosedDelayCommand.data.name, new SetClosedDelayCommand(this)],
 			[GmAppCategoryOpenCommand.data.name, new GmAppCategoryOpenCommand(this)],
+			[CloseCategoryCommand.data.name, new CloseCategoryCommand(this)],
 		]);
 		this.loadEvents();
 
@@ -101,6 +102,9 @@ export default class ExtendedClient extends Client {
 			}
 		}
 
+		const closedCat = this.runtimeConfig.get("category_closed");
+		if (closedCat) this.config.closeOption.closeTicketCategoryId = closedCat;
+
 		const claimedCat = this.runtimeConfig.get("category_claimed");
 		if (claimedCat) this.config.claimOption.categoryWhenClaimed = claimedCat;
 
@@ -125,6 +129,7 @@ export default class ExtendedClient extends Client {
 			SetRoleCommand.data.toJSON(),
 			SetClosedDelayCommand.data.toJSON(),
 			GmAppCategoryOpenCommand.data.toJSON(),
+			CloseCategoryCommand.data.toJSON(),
 		];
 
 		const { guildId } = jsonc.parse(fs.readFileSync(path.join(__dirname, "../../config/config.jsonc"), "utf8"));

@@ -14,6 +14,7 @@ import ClaimedCategoryCommand from "./claimedcategory";
 import SetRoleCommand from "./setrole";
 import SetClosedDelayCommand from "./setcloseddelay";
 import GmAppCategoryOpenCommand from "./gmappcategoryopen";
+import CloseCategoryCommand from "./closecategory";
 
 export {
 	AddCommand,
@@ -32,4 +33,5 @@ export {
 	SetRoleCommand,
 	SetClosedDelayCommand,
 	GmAppCategoryOpenCommand,
+	CloseCategoryCommand,
 };
