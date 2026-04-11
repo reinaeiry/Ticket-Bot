@@ -15,7 +15,7 @@
 			"color": "",
 			"categoryId": "PLACEHOLDER",
 			"ticketNameOption": "na1-TICKETCOUNT-USERNAME",
-			"customDescription": "**NA1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"customDescription": "**NA1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
 			"staffRoles": ["1360329397415972926", "1458642423889662048"],
@@ -33,6 +33,12 @@
 					"maxLength": 50
 				},
 				{
+					"label": "Base Coords (If applicable)",
+					"placeholder": "e.g. 122, 73 - type N/A if not applicable",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
 					"label": "Time the Incident Occurred",
 					"placeholder": "e.g. 2026-04-11 14:30 UTC",
 					"style": "SHORT",
@@ -43,12 +49,6 @@
 					"placeholder": "Describe what happened in detail",
 					"style": "PARAGRAPH",
 					"maxLength": 4000
-				},
-				{
-					"label": "Do you have evidence ready?",
-					"placeholder": "Yes or No",
-					"style": "SHORT",
-					"maxLength": 10
 				}
 			]
 		},
@@ -60,7 +60,7 @@
 			"color": "",
 			"categoryId": "PLACEHOLDER",
 			"ticketNameOption": "na2-TICKETCOUNT-USERNAME",
-			"customDescription": "**NA2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"customDescription": "**NA2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
 			"staffRoles": ["1360329397415972926", "1458642423889662048"],
@@ -78,6 +78,12 @@
 					"maxLength": 50
 				},
 				{
+					"label": "Base Coords (If applicable)",
+					"placeholder": "e.g. 122, 73 - type N/A if not applicable",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
 					"label": "Time the Incident Occurred",
 					"placeholder": "e.g. 2026-04-11 14:30 UTC",
 					"style": "SHORT",
@@ -88,12 +94,6 @@
 					"placeholder": "Describe what happened in detail",
 					"style": "PARAGRAPH",
 					"maxLength": 4000
-				},
-				{
-					"label": "Do you have evidence ready?",
-					"placeholder": "Yes or No",
-					"style": "SHORT",
-					"maxLength": 10
 				}
 			]
 		},
@@ -105,7 +105,7 @@
 			"color": "",
 			"categoryId": "PLACEHOLDER",
 			"ticketNameOption": "eu1-TICKETCOUNT-USERNAME",
-			"customDescription": "**EU1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"customDescription": "**EU1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
 			"staffRoles": ["1360329397415972926", "1458642423889662048"],
@@ -123,6 +123,12 @@
 					"maxLength": 50
 				},
 				{
+					"label": "Base Coords (If applicable)",
+					"placeholder": "e.g. 122, 73 - type N/A if not applicable",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
 					"label": "Time the Incident Occurred",
 					"placeholder": "e.g. 2026-04-11 14:30 UTC",
 					"style": "SHORT",
@@ -133,12 +139,6 @@
 					"placeholder": "Describe what happened in detail",
 					"style": "PARAGRAPH",
 					"maxLength": 4000
-				},
-				{
-					"label": "Do you have evidence ready?",
-					"placeholder": "Yes or No",
-					"style": "SHORT",
-					"maxLength": 10
 				}
 			]
 		},
@@ -150,7 +150,7 @@
 			"color": "",
 			"categoryId": "PLACEHOLDER",
 			"ticketNameOption": "eu2-TICKETCOUNT-USERNAME",
-			"customDescription": "**EU2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"customDescription": "**EU2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
 			"staffRoles": ["1360329397415972926", "1458642423889662048"],
@@ -168,6 +168,12 @@
 					"maxLength": 50
 				},
 				{
+					"label": "Base Coords (If applicable)",
+					"placeholder": "e.g. 122, 73 - type N/A if not applicable",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
 					"label": "Time the Incident Occurred",
 					"placeholder": "e.g. 2026-04-11 14:30 UTC",
 					"style": "SHORT",
@@ -178,12 +184,6 @@
 					"placeholder": "Describe what happened in detail",
 					"style": "PARAGRAPH",
 					"maxLength": 4000
-				},
-				{
-					"label": "Do you have evidence ready?",
-					"placeholder": "Yes or No",
-					"style": "SHORT",
-					"maxLength": 10
 				}
 			]
 		},
@@ -239,7 +239,7 @@
 			"emoji": "📋",
 			"color": "#f1c40f",
 			"categoryId": "PLACEHOLDER",
-			"ticketNameOption": "app-TICKETCOUNT-USERNAME",
+			"ticketNameOption": "gmapp-TICKETCOUNT-USERNAME",
 			"customDescription": "**Gamemaster Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Prior Experience:** REASON3\n**Hours on Server:** REASON4\n**Acknowledgement:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
@@ -271,9 +271,54 @@
 				},
 				{
 					"label": "GM Acknowledgement",
-					"placeholder": "Type YES to confirm you understand that as a GM you cannot play as a regular player",
+					"placeholder": "As a GM you cannot play the server as a regular player. Explain why you accept this and what you bring to the team.",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				}
+			]
+		},
+		{
+			"codeName": "dev-application",
+			"name": "Dev Application",
+			"description": "Apply to join the development team",
+			"emoji": "🛠️",
+			"color": "#3498db",
+			"categoryId": "PLACEHOLDER",
+			"ticketNameOption": "devapp-TICKETCOUNT-USERNAME",
+			"customDescription": "**Developer Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Enfusion Tools Experience:** REASON3\n**Creative Software Experience:** REASON4\n**What can you contribute?** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
 					"style": "SHORT",
-					"maxLength": 10
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Enfusion Tools experience",
+					"placeholder": "Describe any experience with Enfusion Workbench, scripting, terrain editing, etc.",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "Creative software experience",
+					"placeholder": "e.g. Blender, Substance Painter, Photoshop, etc.",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "What can you contribute to ReforgedZ?",
+					"placeholder": "What skills/assets/work would you bring to the team?",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
 				}
 			]
 		}

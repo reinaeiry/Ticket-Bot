@@ -135,7 +135,7 @@ export async function close(
 	let transcriptUrl = "";
 	let transcriptId = "";
 
-	const isBanAppeal = ticketType?.codeName === "ban-appeal";
+	const isBanAppeal = ticketType?.codeName === "ban-appeal" || ticketType?.codeName === "dev-application";
 
 	if (client.config.closeOption.createTranscript && !isBanAppeal) {
 		try {
