@@ -18,7 +18,7 @@
 			"customDescription": "**NA1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": [],
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -63,7 +63,7 @@
 			"customDescription": "**NA2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": [],
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -108,7 +108,7 @@
 			"customDescription": "**EU1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": [],
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -153,7 +153,7 @@
 			"customDescription": "**EU2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": [],
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -198,7 +198,7 @@
 			"customDescription": "**Ban Appeal**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Server Banned From:** REASON3\n**Reason for Unban:** REASON4\n**Additional Context:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": [],
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -243,7 +243,7 @@
 			"customDescription": "**Gamemaster Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Prior Experience:** REASON3\n**Hours on Server:** REASON4\n**Acknowledgement:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": [],
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
