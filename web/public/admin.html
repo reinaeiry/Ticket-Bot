@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReforgedZ Transcripts - Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0c;--bg-dark:#111;--bg-black:#080808;--surface:#181818;--surface-raised:#202020;--border:rgba(255,255,255,.07);--border-hover:rgba(255,255,255,.15);--accent:#cc1f1f;--accent-dim:rgba(204,31,31,.12);--accent-hover:#e02525;--text:#f0f0f0;--text-dim:#aaa;--text-ghost:#777}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+
+header{background:var(--bg-black);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+header h1{font-family:'Oswald',sans-serif;font-size:1.15rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text)}
+header h1 span{color:var(--accent)}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-right span{color:var(--text-ghost);font-size:.82rem}
+
+.btn{padding:8px 16px;border:1px solid var(--border);border-radius:4px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:500;cursor:pointer;transition:all .2s;background:transparent;color:var(--text-dim)}
+.btn:hover{border-color:var(--border-hover);background:var(--surface-raised)}
+.btn-accent{background:var(--accent);border-color:var(--accent);color:#fff;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.btn-accent:hover{background:var(--accent-hover);border-color:var(--accent-hover);box-shadow:0 8px 24px rgba(204,31,31,.4)}
+
+main{max-width:1280px;margin:0 auto;padding:24px}
+
+.stats{display:flex;gap:16px;margin-bottom:24px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px 20px;flex:1;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.stat .num{font-family:'Oswald',sans-serif;font-size:1.8rem;font-weight:700;color:var(--text)}
+.stat .label{font-size:.75rem;color:var(--text-ghost);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+.search-bar{display:flex;gap:12px;margin-bottom:24px}
+.search-bar input{flex:1;padding:10px 16px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:.9rem;outline:none;transition:border .2s}
+.search-bar input:focus{border-color:rgba(204,31,31,.4)}
+.search-bar input::placeholder{color:var(--text-ghost)}
+
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+thead{background:var(--bg-black)}
+th{padding:12px 16px;text-align:left;font-family:'Oswald',sans-serif;font-size:.75rem;color:var(--text-ghost);font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+td{padding:12px 16px;border-top:1px solid var(--border);font-size:.85rem}
+tr{transition:background .15s}
+tr:hover td{background:var(--surface-raised)}
+
+.cat-badge{padding:3px 10px;border-radius:3px;font-size:.7rem;font-weight:600;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px;display:inline-block}
+.cat-na1{background:rgba(46,204,113,.1);color:#2ecc71;border:1px solid rgba(46,204,113,.2)}
+.cat-na2{background:rgba(52,152,219,.1);color:#3498db;border:1px solid rgba(52,152,219,.2)}
+.cat-eu1{background:rgba(241,196,15,.1);color:#f1c40f;border:1px solid rgba(241,196,15,.2)}
+.cat-eu2{background:rgba(155,89,182,.1);color:#9b59b6;border:1px solid rgba(155,89,182,.2)}
+.cat-ban{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(204,31,31,.2)}
+.cat-default{background:rgba(255,255,255,.05);color:var(--text-ghost);border:1px solid var(--border)}
+
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent-hover)}
+
+.pagination{display:flex;justify-content:center;gap:6px;margin-top:24px}
+.pagination button{padding:8px 14px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text-dim);cursor:pointer;font-family:'Inter',sans-serif;font-size:.82rem;transition:all .2s}
+.pagination button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.pagination button:hover:not(.active){border-color:var(--border-hover);background:var(--surface-raised)}
+.pagination button:disabled{opacity:.3;cursor:default}
+
+.empty{text-align:center;padding:48px;color:var(--text-ghost)}
+.time{color:var(--text-ghost);font-size:.78rem}
+</style>
+</head>
+<body>
+<header>
+	<h1><span>Reforged</span>Z Transcripts</h1>
+	<div class="header-right">
+		<span id="adminName"></span>
+		<button class="btn" onclick="changePassword()">Change Password</button>
+		<button class="btn btn-accent" onclick="logout()">Logout</button>
+	</div>
+</header>
+<main>
+	<div class="stats" id="stats">
+		<div class="stat"><div class="num" id="totalCount">-</div><div class="label">Total Transcripts</div></div>
+		<div class="stat"><div class="num" id="searchCount">-</div><div class="label">Showing</div></div>
+	</div>
+	<div class="search-bar">
+		<input type="text" id="searchInput" placeholder="Search by ticket #, player name, category, or content..." autofocus>
+		<button class="btn btn-accent" onclick="search()">Search</button>
+		<button class="btn" onclick="clearSearch()">Clear</button>
+	</div>
+	<div id="tableWrap">
+		<table>
+			<thead><tr>
+				<th>Ticket #</th>
+				<th>Channel</th>
+				<th>Category</th>
+				<th>Created By</th>
+				<th>Closed By</th>
+				<th>Reason</th>
+				<th>Msgs</th>
+				<th>Date</th>
+				<th>Actions</th>
+			</tr></thead>
+			<tbody id="tbody"></tbody>
+		</table>
+	</div>
+	<div class="pagination" id="pagination"></div>
+</main>
+<script>
+let currentPage=1,currentSearch="";
+
+async function checkAuth(){
+	try{
+		const r=await fetch("/api/auth/me");
+		if(!r.ok)throw 0;
+		const d=await r.json();
+		document.getElementById("adminName").textContent=d.username;
+	}catch{window.location.href="/login"}
+}
+
+function catClass(cat){
+	if(!cat)return"cat-default";
+	const l=cat.toLowerCase();
+	if(l.includes("na1"))return"cat-na1";if(l.includes("na2"))return"cat-na2";
+	if(l.includes("eu1"))return"cat-eu1";if(l.includes("eu2"))return"cat-eu2";
+	if(l.includes("ban")||l.includes("appeal"))return"cat-ban";return"cat-default";
+}
+
+function fmtDate(ts){
+	if(!ts)return"-";
+	const d=new Date(ts);
+	return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+}
+
+function truncate(s,n){if(!s)return"-";return s.length>n?s.substring(0,n)+"...":s;}
+
+async function loadTickets(page=1,search=""){
+	currentPage=page;currentSearch=search;
+	const params=new URLSearchParams({page,limit:50});
+	if(search)params.set("search",search);
+	try{
+		const r=await fetch("/api/tickets?"+params);
+		if(!r.ok)throw 0;
+		const d=await r.json();
+		document.getElementById("totalCount").textContent=d.total;
+		document.getElementById("searchCount").textContent=d.tickets.length;
+		const tbody=document.getElementById("tbody");
+		if(d.tickets.length===0){
+			tbody.innerHTML='<tr><td colspan="9" class="empty">No transcripts found</td></tr>';
+		}else{
+			tbody.innerHTML=d.tickets.map(t=>`<tr>
+				<td><strong>#${t.ticketId||"-"}</strong></td>
+				<td>${t.channelName||"-"}</td>
+				<td><span class="cat-badge ${catClass(t.category)}">${t.category||"Unknown"}</span></td>
+				<td>${t.createdByName||"-"}</td>
+				<td>${t.closedByName||"-"}</td>
+				<td>${truncate(t.closeReason,40)}</td>
+				<td>${t.messageCount||0}</td>
+				<td class="time">${fmtDate(t.closedAt)}</td>
+				<td><a href="/t/${t.id}" target="_blank">View</a></td>
+			</tr>`).join("");
+		}
+		renderPagination(d.page,d.totalPages);
+	}catch{document.getElementById("tbody").innerHTML='<tr><td colspan="9" class="empty">Failed to load</td></tr>'}
+}
+
+function renderPagination(current,total){
+	const el=document.getElementById("pagination");
+	if(total<=1){el.innerHTML="";return}
+	let html="";
+	const start=Math.max(1,current-3),end=Math.min(total,current+3);
+	if(start>1)html+=`<button onclick="loadTickets(1,'${currentSearch}')">1</button>`;
+	if(start>2)html+=`<button disabled>...</button>`;
+	for(let i=start;i<=end;i++){
+		html+=`<button class="${i===current?"active":""}" onclick="loadTickets(${i},'${currentSearch}')">${i}</button>`;
+	}
+	if(end<total-1)html+=`<button disabled>...</button>`;
+	if(end<total)html+=`<button onclick="loadTickets(${total},'${currentSearch}')">${total}</button>`;
+	el.innerHTML=html;
+}
+
+function search(){loadTickets(1,document.getElementById("searchInput").value.trim())}
+function clearSearch(){document.getElementById("searchInput").value="";loadTickets(1,"")}
+document.getElementById("searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
+
+async function logout(){
+	await fetch("/api/auth/logout",{method:"POST"});
+	window.location.href="/login";
+}
+
+function changePassword(){
+	const cur=prompt("Current password:");if(!cur)return;
+	const nw=prompt("New password:");if(!nw)return;
+	fetch("/api/auth/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({currentPassword:cur,newPassword:nw})})
+		.then(r=>r.json()).then(d=>{if(d.success)alert("Password changed!");else alert(d.error||"Failed")});
+}
+
+checkAuth();
+loadTickets();
+</script>
+</body>
+</html>

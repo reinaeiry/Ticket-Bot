@@ -1,47 +1,47 @@
 {
 	"embeds": {
 		"openTicket": {
-			"title": "Open a ticket",
-			"description": "Click on the button to start opening a ticket",
+			"title": "ReforgedZ Support",
+			"description": "Click the button below to open a support ticket or submit a ban appeal.",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketOpened": {
 			"title": "Ticket CATEGORYNAME",
-			"description": "A staff will reply you as soon as possible!",
+			"description": "A staff member will review your ticket as soon as possible.",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		},
 		"ticketClosed": {
 			"title": "Ticket closed",
-			"description": "The ticket has been closed by CLOSERNAME with the following reason: `REASON`",
-			"deleteTicketInfo": "> The ticket will be deleted in 15 seconds"
+			"description": "This ticket has been closed by CLOSERNAME.\nReason: `REASON`",
+			"deleteTicketInfo": "> This ticket will be deleted shortly."
 		},
 		"ticketClosedDM": {
 			"title": "Ticket closed",
-			"description": "The ticket n°TICKETCOUNT has been closed by CLOSERNAME with the following reason: `REASON`\n\nHere is the transcript of the ticket: TRANSCRIPTURL",
+			"description": "Your ticket #TICKETCOUNT has been closed by CLOSERNAME.\nReason: `REASON`\n\nTranscript: TRANSCRIPTURL",
 			"footer": {
-				"text": "ticket.pm"
+				"text": "ReforgedZ"
 			}
 		}
 	},
 	"modals": {
 		"reasonTicketOpen": {
-			"title": "Open ticket",
-			"label": "The reason of your ticket",
-			"placeholder": "Please enter the reason of why you are opening a ticket"
+			"title": "Support Ticket",
+			"label": "Please provide the following information",
+			"placeholder": "Please fill out all required fields"
 		},
 		"reasonTicketClose": {
-			"title": "Close ticket",
-			"label": "The reason of the ticket closure",
-			"placeholder": "Please enter the reason of why you are closing the ticket"
+			"title": "Close Ticket",
+			"label": "Reason for closing this ticket",
+			"placeholder": "Please enter the reason for closing this ticket"
 		}
 	},
 	"buttons": {
 		"close": {
-			"label": "Close ticket",
+			"label": "Close Ticket",
 			"emoji": "🔒"
 		},
 		"claim": {
@@ -49,24 +49,24 @@
 			"emoji": "🙋"
 		}
 	},
-	"invalidConfig": "Invalid configuration detected, please ask the bot operator to fix it!",
+	"invalidConfig": "Invalid configuration detected. Please contact an administrator.",
 	"ticketOpenedMessage": "Ticket opened! TICKETCHANNEL",
-	"ticketOnlyClaimableByStaff": "The ticket can only be claimed by a staff!",
-	"ticketAlreadyClaimed": "The ticket is already claimed!",
+	"ticketOnlyClaimableByStaff": "Only staff can claim tickets.",
+	"ticketAlreadyClaimed": "This ticket has already been claimed.",
 	"ticketClaimedMessage": "> Ticket claimed by USER",
-	"ticketOnlyClosableByStaff": "Only staff can close the ticket!",
-	"ticketAlreadyClosed": "The ticket is already closed!",
+	"ticketOnlyClosableByStaff": "Only staff can close tickets.",
+	"ticketAlreadyClosed": "This ticket is already closed.",
 	"ticketCreatingTranscript": "> Creating transcript...",
 	"ticketTranscriptCreated": "> Transcript created! TRANSCRIPTURL",
-	"ticketOnlyRenamableByStaff": "Only staff can rename tickets!",
+	"ticketOnlyRenamableByStaff": "Only staff can rename tickets.",
 	"ticketRenamed": "> Ticket renamed to NEWNAME",
-	"ticketLimitReached": "You can only have TICKETLIMIT tickets opened at the same time!",
-	"noTickets": "You don't have access to any tickets",
+	"ticketLimitReached": "You can only have TICKETLIMIT tickets open at the same time.",
+	"noTickets": "You don't have access to any ticket types.",
 
 	"other": {
-		"openTicketButtonMSG": "Open a ticket",
-		"deleteTicketButtonMSG": "Delete ticket",
-		"selectTicketTypePlaceholder": "Select a ticket type",
+		"openTicketButtonMSG": "Open Support Ticket",
+		"deleteTicketButtonMSG": "Delete Ticket",
+		"selectTicketTypePlaceholder": "Select your ticket type",
 		"claimedBy": "**Claimed By**: USER",
 		"noReasonGiven": "No reason given",
 		"unavailable": "Unavailable"

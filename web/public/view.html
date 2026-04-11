@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcript</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0c0c;--bg-dark:#111;--bg-black:#080808;--surface:#181818;--surface-raised:#202020;--border:rgba(255,255,255,.07);--border-hover:rgba(255,255,255,.15);--accent:#cc1f1f;--accent-dim:rgba(204,31,31,.12);--accent-hover:#e02525;--text:#f0f0f0;--text-dim:#aaa;--text-ghost:#777}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+
+header{background:var(--bg-black);padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+header h1{font-family:'Oswald',sans-serif;font-size:1rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+header h1 .hash{color:var(--accent);font-size:1.2rem}
+.back-link{color:var(--text-ghost);font-size:.8rem;text-decoration:none;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+.back-link:hover{color:var(--accent)}
+
+.meta{display:flex;gap:24px;flex-wrap:wrap;padding:14px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.meta-item{font-size:.78rem}
+.meta-item .label{color:var(--text-ghost);margin-right:4px;text-transform:uppercase;letter-spacing:.3px;font-size:.7rem}
+.meta-item .value{color:var(--text-dim)}
+
+.messages{max-width:900px;margin:0 auto;padding:16px 0}
+.msg{display:flex;padding:2px 24px;position:relative;transition:background .1s}
+.msg:hover{background:rgba(255,255,255,.02)}
+.msg.has-header{margin-top:16px}
+.avatar{width:40px;height:40px;border-radius:4px;margin-right:16px;flex-shrink:0;background:var(--surface-raised);display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:600;font-size:.9rem;color:var(--text-dim);border:1px solid var(--border)}
+.avatar img{width:40px;height:40px;border-radius:4px}
+.msg-body{flex:1;min-width:0}
+.msg-header{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.author{font-weight:600;font-size:.9rem;color:var(--text);cursor:default}
+.bot-tag{background:var(--accent);color:#fff;font-family:'Oswald',sans-serif;font-size:.6rem;padding:1px 5px;border-radius:2px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;position:relative;top:-1px}
+.timestamp{color:var(--text-ghost);font-size:.7rem}
+.content{font-size:.9rem;line-height:1.4;word-wrap:break-word;white-space:pre-wrap;color:var(--text-dim)}
+.content a{color:var(--accent);text-decoration:none}
+.content a:hover{text-decoration:underline;color:var(--accent-hover)}
+.embed{margin-top:4px;max-width:520px;border-radius:4px;overflow:hidden;display:flex;border:1px solid var(--border)}
+.embed-pill{width:3px;flex-shrink:0;background:var(--accent)}
+.embed-content{padding:8px 16px 8px 12px;background:var(--surface);flex:1}
+.embed-title{font-weight:600;font-size:.85rem;margin-bottom:4px;color:var(--text)}
+.embed-desc{font-size:.82rem;color:var(--text-dim);white-space:pre-wrap}
+.attachment{margin-top:4px}
+.attachment img{max-width:400px;max-height:300px;border-radius:4px;border:1px solid var(--border)}
+.attachment a{color:var(--accent);font-size:.82rem}
+.no-avatar{width:40px;margin-right:16px;flex-shrink:0}
+.loading{text-align:center;padding:48px;color:var(--text-ghost);font-family:'Oswald',sans-serif;font-size:1rem;text-transform:uppercase;letter-spacing:1px}
+.error{text-align:center;padding:48px;color:var(--accent);font-family:'Oswald',sans-serif;font-size:1rem;text-transform:uppercase}
+</style>
+</head>
+<body>
+<header>
+	<h1><span class="hash">#</span> <span id="channelName">Loading...</span></h1>
+	<a class="back-link" href="/admin">Admin Panel</a>
+</header>
+<div class="meta" id="metaBar"></div>
+<div class="messages" id="messages">
+	<div class="loading">Loading transcript...</div>
+</div>
+<script>
+const tid=window.location.pathname.split("/").pop();
+
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML}
+
+function fmtDate(ts){
+	const d=new Date(ts);
+	return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})+" at "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+}
+
+function getInitials(name){return name?name.charAt(0).toUpperCase():"?"}
+
+function getAvatarColor(id){
+	const colors=["#cc1f1f","#2ecc71","#3498db","#9b59b6","#f1c40f","#e67e22","#1abc9c"];
+	let h=0;for(let i=0;i<(id||"0").length;i++)h=id.charCodeAt(i)+((h<<5)-h);
+	return colors[Math.abs(h)%colors.length];
+}
+
+function renderMsg(msg,prev){
+	const same=prev&&prev.author?.id===msg.author?.id;
+	const dt=prev?new Date(msg.timestamp)-new Date(prev.timestamp):999999999;
+	const grouped=same&&dt<420000;
+
+	let h=`<div class="msg ${grouped?"":"has-header"}">`;
+	if(grouped){
+		h+=`<div class="no-avatar"></div>`;
+	}else{
+		const url=msg.author?.avatarURL||msg.author?.avatar;
+		const c=getAvatarColor(msg.author?.id);
+		if(url)h+=`<div class="avatar"><img src="${esc(url)}" onerror="this.parentElement.innerHTML='${getInitials(msg.author?.username)}'"></div>`;
+		else h+=`<div class="avatar" style="background:${c};border-color:${c}33">${getInitials(msg.author?.username)}</div>`;
+	}
+	h+=`<div class="msg-body">`;
+	if(!grouped){
+		h+=`<div class="msg-header"><span class="author">${esc(msg.author?.username||"Unknown")}</span>`;
+		if(msg.author?.bot)h+=`<span class="bot-tag">Bot</span>`;
+		h+=`<span class="timestamp">${fmtDate(msg.timestamp||msg.createdTimestamp)}</span></div>`;
+	}
+	if(msg.content){
+		let c=esc(msg.content);
+		c=c.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+		c=c.replace(/&lt;@!?(\d+)&gt;/g,'<span style="color:var(--accent);background:var(--accent-dim);padding:0 3px;border-radius:2px">@user</span>');
+		c=c.replace(/&lt;@&amp;(\d+)&gt;/g,'<span style="color:var(--accent);background:var(--accent-dim);padding:0 3px;border-radius:2px">@role</span>');
+		c=c.replace(/&lt;#(\d+)&gt;/g,'<span style="color:var(--accent);background:var(--accent-dim);padding:0 3px;border-radius:2px">#channel</span>');
+		h+=`<div class="content">${c}</div>`;
+	}
+	if(msg.embeds?.length){
+		for(const e of msg.embeds){
+			const col=e.color?`#${e.color.toString(16).padStart(6,"0")}`:"var(--accent)";
+			h+=`<div class="embed"><div class="embed-pill" style="background:${col}"></div><div class="embed-content">`;
+			if(e.title)h+=`<div class="embed-title">${esc(e.title)}</div>`;
+			if(e.description)h+=`<div class="embed-desc">${esc(e.description)}</div>`;
+			h+=`</div></div>`;
+		}
+	}
+	if(msg.attachments?.length){
+		for(const a of msg.attachments){
+			const u=a.url||a.proxyURL,n=a.name||"attachment";
+			if(/\.(png|jpg|jpeg|gif|webp)$/i.test(n)&&u)h+=`<div class="attachment"><img src="${esc(u)}" alt="${esc(n)}"></div>`;
+			else if(u)h+=`<div class="attachment"><a href="${esc(u)}" target="_blank">${esc(n)}</a></div>`;
+		}
+	}
+	h+=`</div></div>`;
+	return h;
+}
+
+async function load(){
+	try{
+		const r=await fetch(`/api/transcript/${tid}`);
+		if(!r.ok)throw 0;
+		const d=await r.json();
+		document.getElementById("channelName").textContent=d.channelName||`Ticket #${d.ticketId}`;
+		document.title=`Transcript - ${d.channelName||d.ticketId}`;
+
+		let m="";
+		if(d.category)m+=`<div class="meta-item"><span class="label">Category:</span><span class="value">${esc(d.category)}</span></div>`;
+		if(d.createdByName)m+=`<div class="meta-item"><span class="label">Created by:</span><span class="value">${esc(d.createdByName)}</span></div>`;
+		if(d.closedByName)m+=`<div class="meta-item"><span class="label">Closed by:</span><span class="value">${esc(d.closedByName)}</span></div>`;
+		if(d.closeReason)m+=`<div class="meta-item"><span class="label">Reason:</span><span class="value">${esc(d.closeReason)}</span></div>`;
+		if(d.closedAt)m+=`<div class="meta-item"><span class="label">Closed:</span><span class="value">${fmtDate(d.closedAt)}</span></div>`;
+		m+=`<div class="meta-item"><span class="label">Messages:</span><span class="value">${d.messageCount}</span></div>`;
+		document.getElementById("metaBar").innerHTML=m;
+
+		const msgs=d.messages||[];
+		if(!msgs.length){document.getElementById("messages").innerHTML='<div class="loading">No messages</div>';return}
+		let html="";
+		for(let i=0;i<msgs.length;i++)html+=renderMsg(msgs[i],i>0?msgs[i-1]:null);
+		document.getElementById("messages").innerHTML=html;
+	}catch{document.getElementById("messages").innerHTML='<div class="error">Transcript not found</div>'}
+}
+load();
+</script>
+</body>
+</html>

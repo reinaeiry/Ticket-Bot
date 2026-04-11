@@ -251,15 +251,15 @@ export default class InteractionCreateEvent extends BaseEvent {
 				const ticketType = this.client.config.ticketTypes.find((x) => x.codeName === type);
 				// Using customId until the value can be figured out
 				if (!ticketType) return console.error(`Ticket type ${interaction.customId} not found!`);
-				createTicket(interaction, this.client, ticketType, interaction.fields.fields);
+				createTicket(interaction, this.client, ticketType, interaction.fields.fields as any);
 			}
 
 			if (interaction.customId === "askReasonClose") {
 				await interaction.deferReply().catch((e) => console.log(e));
-				close(interaction, this.client, interaction.fields.fields.first()?.value);
+				close(interaction, this.client, (interaction.fields.fields.first() as any)?.value);
 			} else if (interaction.customId === "askReasonDelete") {
 				await interaction.deferReply().catch((e) => console.log(e));
-				close(interaction, this.client, interaction.fields.fields.first()?.value, true);
+				close(interaction, this.client, (interaction.fields.fields.first() as any)?.value, true);
 			}
 		}
 	}

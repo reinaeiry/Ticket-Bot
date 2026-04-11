@@ -109,7 +109,7 @@ export const claim = async(interaction: ButtonInteraction | CommandInteraction, 
    	}
 
 	// Move to claimed category when ticket is claimed
-	const categoryID = client.config.claimOption.categoryWhenClaimed;
+	const categoryID = client.runtimeConfig.get("category_claimed") || client.config.claimOption.categoryWhenClaimed;
 	if(categoryID && categoryID.trim() !== "") {
 		const category = await interaction.guild?.channels.fetch(categoryID);
 		if(category?.type !== ChannelType.GuildCategory)

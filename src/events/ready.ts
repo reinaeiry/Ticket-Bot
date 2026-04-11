@@ -4,6 +4,7 @@ import {client as WebSocketClient, connection} from "websocket";
 import {ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, EmbedBuilder, Message} from "discord.js";
 import os from "os";
 import {BaseEvent, ExtendedClient, SponsorType} from "../structure";
+import { resumePendingDeletes } from "../utils/pendingDeletes";
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -111,6 +112,9 @@ export default class ReadyEvent extends BaseEvent {
 			console.error(e);
 		}
 
+
+		await this.client.loadRuntimeConfig();
+		await resumePendingDeletes(this.client);
 
 		this.setStatus();
 		setInterval(()=>this.setStatus(), 9e5); // 15 minutes

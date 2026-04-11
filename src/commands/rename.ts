@@ -1,4 +1,4 @@
-import { CommandInteraction, GuildMember, SlashCommandBuilder, TextChannel } from "discord.js";
+import { ChatInputCommandInteraction, CommandInteraction, GuildMember, SlashCommandBuilder, TextChannel } from "discord.js";
 import {BaseCommand, ExtendedClient, TicketType} from "../structure";
 
 /*
@@ -36,7 +36,7 @@ export default class RenameCommand extends BaseCommand {
 				})
 				.catch((e) => console.log(e));
 
-		(interaction.channel as TextChannel)?.setName(interaction.options.get("name", true).value as string).catch((e) => console.log(e));
+		(interaction.channel as TextChannel)?.setName((interaction as ChatInputCommandInteraction).options.getString("name", true)).catch((e) => console.log(e));
 		interaction
 			.reply({ content: this.client.locales.getValue("ticketRenamed").replace("NEWNAME", (interaction.channel as TextChannel | null)?.toString() ?? "Unknown"), ephemeral: false })
 			.catch((e) => console.log(e));	}

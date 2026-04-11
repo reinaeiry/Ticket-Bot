@@ -3,17 +3,23 @@ import {BaseCommand, ConfigType} from "./";
 import {PrismaClient} from "@prisma/client";
 import fs from "fs-extra";
 import path from "node:path";
-import {AddCommand, MassAddCommand, ClaimCommand, CloseCommand, RemoveCommand, RenameCommand, clearDM} from "../commands";
-import {InteractionCreateEvent, ReadyEvent} from "../events";
+import {
+	AddCommand, MassAddCommand, ClaimCommand, CloseCommand, RemoveCommand, RenameCommand, clearDM,
+	Na1CategoryOpenCommand, Na2CategoryOpenCommand, Eu1CategoryOpenCommand, Eu2CategoryOpenCommand,
+	BanAppealCategoryOpenCommand, ClaimedCategoryCommand, SetRoleCommand, SetClosedDelayCommand,
+} from "../commands";
+import {InteractionCreateEvent, ReadyEvent, MessageCreateEvent} from "../events";
 import {jsonc} from "jsonc";
 import {REST} from "@discordjs/rest";
 import {Translation} from "../utils/translation";
 
 export default class ExtendedClient extends Client {
-	public readonly config: ConfigType;
+	public config: ConfigType;
 	public readonly prisma: PrismaClient;
 	public locales: Translation;
 	public commands: Collection<string, BaseCommand>;
+	public runtimeConfig: Map<string, string> = new Map();
+
 	constructor(options: ClientOptions, config: ConfigType) {
 		super(options);
 
@@ -30,6 +36,14 @@ export default class ExtendedClient extends Client {
 			[RemoveCommand.data.name, new RemoveCommand(this)],
 			[RenameCommand.data.name, new RenameCommand(this)],
 			[clearDM.data.name, new clearDM(this)],
+			[Na1CategoryOpenCommand.data.name, new Na1CategoryOpenCommand(this)],
+			[Na2CategoryOpenCommand.data.name, new Na2CategoryOpenCommand(this)],
+			[Eu1CategoryOpenCommand.data.name, new Eu1CategoryOpenCommand(this)],
+			[Eu2CategoryOpenCommand.data.name, new Eu2CategoryOpenCommand(this)],
+			[BanAppealCategoryOpenCommand.data.name, new BanAppealCategoryOpenCommand(this)],
+			[ClaimedCategoryCommand.data.name, new ClaimedCategoryCommand(this)],
+			[SetRoleCommand.data.name, new SetRoleCommand(this)],
+			[SetClosedDelayCommand.data.name, new SetClosedDelayCommand(this)],
 		]);
 		this.loadEvents();
 
@@ -60,6 +74,35 @@ export default class ExtendedClient extends Client {
 	private loadEvents () {
 		this.on("interactionCreate", (interaction) => new InteractionCreateEvent(this).execute(interaction));
 		this.on("ready", () => new ReadyEvent(this).execute());
+		this.on("messageCreate", (message) => new MessageCreateEvent(this).execute(message));
+	}
+
+	public async loadRuntimeConfig(): Promise<void> {
+		const rows = await this.prisma.config.findMany();
+		for (const row of rows) {
+			if (row.value) this.runtimeConfig.set(row.key, row.value);
+		}
+
+		const categoryMap: Record<string, string> = {
+			"na1-support": "category_na1_open",
+			"na2-support": "category_na2_open",
+			"eu1-support": "category_eu1_open",
+			"eu2-support": "category_eu2_open",
+			"ban-appeal": "category_banappeal_open",
+		};
+
+		for (const tt of this.config.ticketTypes) {
+			const dbKey = categoryMap[tt.codeName];
+			if (dbKey && this.runtimeConfig.has(dbKey)) {
+				tt.categoryId = this.runtimeConfig.get(dbKey)!;
+			}
+		}
+
+		const claimedCat = this.runtimeConfig.get("category_claimed");
+		if (claimedCat) this.config.claimOption.categoryWhenClaimed = claimedCat;
+
+		const staffRole = this.runtimeConfig.get("staff_role");
+		if (staffRole) this.config.rolesWhoHaveAccessToTheTickets = [staffRole];
 	}
 
 	public deployCommands() {
@@ -70,6 +113,14 @@ export default class ExtendedClient extends Client {
 			RemoveCommand.data.toJSON(),
 			RenameCommand.data.toJSON(),
 			clearDM.data.toJSON(),
+			Na1CategoryOpenCommand.data.toJSON(),
+			Na2CategoryOpenCommand.data.toJSON(),
+			Eu1CategoryOpenCommand.data.toJSON(),
+			Eu2CategoryOpenCommand.data.toJSON(),
+			BanAppealCategoryOpenCommand.data.toJSON(),
+			ClaimedCategoryCommand.data.toJSON(),
+			SetRoleCommand.data.toJSON(),
+			SetClosedDelayCommand.data.toJSON(),
 		];
 
 		const { guildId } = jsonc.parse(fs.readFileSync(path.join(__dirname, "../../config/config.jsonc"), "utf8"));

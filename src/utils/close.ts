@@ -17,18 +17,10 @@ import {
 	ModalSubmitInteraction,
 	TextChannel
 } from "discord.js";
-import { generateMessages } from "ticket-bot-transcript-uploader";
-import zlib from "zlib";
 import { ExtendedClient, TicketType } from "../structure";
 import { log } from "./logs";
-let domain = "https://ticket.pm/";
 
-/*
-Copyright 2023 Sayrix (github.com/Sayrix)
-
-Licensed under the Creative Commons Attribution 4.0 International
-please check https://creativecommons.org/licenses/by/4.0 for more informations.
-*/
+const TRANSCRIPT_DOMAIN = "https://transcripts.reforgedz.net";
 
 type ticketType = {
 	id: number;
@@ -60,8 +52,6 @@ export async function close(
 			ephemeral: true
 		});
 
-	if (!client.config.closeOption.createTranscript) domain = client.locales.getSubValue("other", "unavailable");
-
 	const ticket = await client.prisma.tickets.findUnique({
 		where: {
 			channelid: interaction.channel.id
@@ -70,7 +60,6 @@ export async function close(
 	const ticketClosed = ticket?.closedat && ticket.closedby;
 	if (!ticket) return interaction.editReply({ content: "Ticket not found" }).catch((e) => console.log(e));
 
-	// @TODO: Breaking change refactor happens here as well..
 	const ticketType = ticket ? (JSON.parse(ticket.category) as TicketType) : undefined;
 
 	if (
@@ -104,8 +93,6 @@ export async function close(
 		client
 	);
 
-	// Normally the user that closes the ticket will get posted here, but we'll do it when the ticket finalizes
-
 	const creator = ticket.creator;
 	const invited = JSON.parse(ticket.invited) as string[];
 
@@ -126,182 +113,203 @@ export async function close(
 			content: client.locales.getValue("ticketCreatingTranscript")
 		})
 		.catch((e) => console.log(e));
-	async function _close(id: string, ticket: ticketType) {
-		if (client.config.closeOption.closeTicketCategoryId)
-			(interaction.channel as TextChannel | null)?.setParent(client.config.closeOption.closeTicketCategoryId).catch((e) => console.log(e));
 
-		const msg = await interaction.channel?.messages.fetch(ticket.messageid);
-		const embed = new EmbedBuilder(msg?.embeds[0].data);
-
-		const rowAction = new ActionRowBuilder<ButtonBuilder>();
-		(msg?.components[0] as ActionRow<MessageActionRowComponent>)?.components?.map((x) => {
-			if (x.type !== ComponentType.Button) return;
-			const builder = new ButtonBuilder(x.data);
-			if (x.customId === "close") builder.setDisabled(true);
-			if (x.customId === "close_askReason") builder.setDisabled(true);
-			rowAction.addComponents(builder);
-		});
-
-		msg
-			?.edit({
-				content: msg.content,
-				embeds: [embed],
-				components: [rowAction]
-			})
-			.catch((e) => console.log(e));
-		
-		// Workaround for type handling, rewrite should not follow this.
-		if(interaction.channel && interaction.channel.type !== ChannelType.GuildText) 
-			throw Error("Close util used in a non-text channel");
-
-		interaction.channel
-			?.send({
-				content: client.locales
-					.getValue("ticketTranscriptCreated")
-					.replace(
-						"TRANSCRIPTURL",
-						domain === client.locales.getSubValue("other", "unavailable") ? client.locales.getSubValue("other", "unavailable") : `<${domain}${id}>`
-					)
-			})
-			.catch((e) => console.log(e));
-
-		ticket = await client.prisma.tickets.update({
-			data: {
-				closedby: interaction.user.id,
-				closedat: Date.now(),
-				closereason: reason,
-				transcript: domain === client.locales.getSubValue("other", "unavailable") ? client.locales.getSubValue("other", "unavailable") : `${domain}${id}`
-			},
-			where: {
-				channelid: interaction.channel?.id
-			}
-		});
-
-		const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-			new ButtonBuilder()
-				.setCustomId("deleteTicket")
-				.setLabel(client.locales.getSubValue("other", "deleteTicketButtonMSG"))
-				.setStyle(ButtonStyle.Danger)
-				.setDisabled(deleteTicket)
-		);
-		const locale = client.locales;
-		// Use JSON.stringify().slice(1, -1) to safely escape (strips outer quotes while keeping JSON special chars escaped)
-		const safeTicketCount = JSON.stringify(ticket.id.toString()).slice(1, -1);
-		const safeReason = JSON.stringify(
-			(ticket.closereason ?? client.locales.getSubValue("other", "noReasonGiven")).replace(/[\n\r]/g, "\\n")
-		).slice(1, -1);
-		const safeCloserName = JSON.stringify(interaction.user.tag).slice(1, -1);
-		interaction.channel
-			?.send({
-				embeds: [
-					JSON.parse(
-						JSON.stringify(locale.getSubRawValue("embeds", "ticketClosed"))
-							.replace("TICKETCOUNT", safeTicketCount)
-							.replace("REASON", safeReason)
-							.replace("CLOSERNAME", safeCloserName)
-					)
-				],
-				components: [row]
-			})
-			.catch((e) => console.log(e));
-
-		if (deleteTicket) {
-			log(
-				{
-					LogType: "ticketDelete",
-					user: interaction.user,
-					ticketId: ticket.id,
-					ticketCreatedAt: ticket.createdat,
-					transcriptURL: ticket.transcript ?? undefined
-				},
-				client
-			);
-
-			interaction.channel?.send({
-				content: client.locales.getSubValue("embeds", "ticketClosed", "deleteTicketInfo")
-			});
-			setTimeout(() => interaction.channel?.delete().catch((e) => console.log(e)), 15000); // ticket will be deleted within 15 seconds
-		}
-
-		if (!client.config.closeOption.dmUser) return;
-		const footer = locale.getSubValue("embeds", "ticketClosedDM", "footer", "text").replace("ticket.pm", "");
-		const ticketClosedDMEmbed = new EmbedBuilder({
-			color: 0
-		})
-			.setColor((locale.getNoErrorSubValue("embeds", "ticketClosedDM", "color") as ColorResolvable) ?? client.config.mainColor)
-			.setDescription(
-				client.locales
-					.getSubValue("embeds", "ticketClosedDM", "description")
-					.replace("TICKETCOUNT", ticket.id.toString())
-					.replace("TRANSCRIPTURL", `${domain}${id}`)
-					.replace("REASON", ticket.closereason ?? client.locales.getSubValue("other", "noReasonGiven"))
-					.replace("CLOSERNAME", interaction.user.tag)
-			)
-			.setFooter({
-				// Please respect the project by keeping the credits, (if it is too disturbing you can credit me in the "about me" of the bot discord)
-				text: `ticket.pm ${footer.trim() !== "" ? `- ${footer}` : ""}`, // Please respect the LICENSE :D
-				// Please respect the project by keeping the credits, (if it is too disturbing you can credit me in the "about me" of the bot discord)
-				iconURL: locale.getNoErrorSubValue("embeds", "ticketClosedDM", "footer", "iconUrl")
-			});
-
-		client.users.fetch(creator).then((user) => {
-			user
-				.send({
-					embeds: [ticketClosedDMEmbed]
-				})
-				.catch((e) => console.log(e));
-		});
-	}
-
-	if (!client.config.closeOption.createTranscript) {
-		_close("", ticket);
-		return;
-	}
-
+	// Fetch all messages from the channel
 	async function fetchAll() {
 		const collArray: Collection<string, Message<true | false>>[] = [];
 		let lastID = (interaction.channel as TextChannel | null)?.lastMessageId;
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
-			// using if statement for this check causes a TypeScript bug. Hard to reproduce; thus, bug report won't be accepted.
 			if (!lastID) break;
 			const fetched = await interaction.channel?.messages.fetch({ limit: 100, before: lastID });
-			if (fetched?.size === 0) {
-				break;
-			}
+			if (fetched?.size === 0) break;
 			if (fetched) collArray.push(fetched);
 			lastID = fetched?.last()?.id;
-			if (fetched?.size !== 100) {
-				break;
-			}
+			if (fetched?.size !== 100) break;
 		}
-		const messages = collArray[0].concat(...collArray.slice(1));
-		return messages;
+		if (collArray.length === 0) return new Collection<string, Message>();
+		return collArray[0].concat(...collArray.slice(1));
 	}
 
-	const messages = await fetchAll();
-	const premiumKey = "";
+	// Build transcript data
+	let transcriptUrl = "";
+	let transcriptId = "";
 
-	const messagesJSON = await generateMessages(messages, premiumKey, "https://m.ticket.pm");
-	zlib.gzip(JSON.stringify(messagesJSON), async (err, compressed) => {
-		if (err) {
-			console.error(err);
-		} else {
-			const ts = await axios
-				.post(`${domain}upload?key=${premiumKey}&uuid=${client.config.uuidType}`, JSON.stringify(compressed), {
+	if (client.config.closeOption.createTranscript) {
+		try {
+			const messages = await fetchAll();
+			const creatorUser = await client.users.fetch(creator).catch(() => null);
+
+			// Convert Discord messages to a storable format
+			const messageData = messages.reverse().map((msg) => ({
+				author: {
+					id: msg.author.id,
+					username: msg.author.tag,
+					avatar: msg.author.displayAvatarURL({ size: 64 }),
+					bot: msg.author.bot,
+				},
+				content: msg.content,
+				timestamp: msg.createdAt.toISOString(),
+				embeds: msg.embeds.map((e) => ({
+					title: e.title,
+					description: e.description,
+					color: e.color,
+					fields: e.fields,
+					footer: e.footer,
+					thumbnail: e.thumbnail,
+					image: e.image,
+				})),
+				attachments: msg.attachments.map((a) => ({
+					name: a.name,
+					url: a.url,
+					proxyURL: a.proxyURL,
+					size: a.size,
+					contentType: a.contentType,
+				})),
+			}));
+
+			const apiKey = process.env.TRANSCRIPT_API_KEY || "";
+			const res = await axios.post(
+				`${TRANSCRIPT_DOMAIN}/api/upload`,
+				{
+					ticketId: ticket.id,
+					channelName: (interaction.channel as TextChannel).name,
+					category: ticketType?.name || "Unknown",
+					createdBy: creator,
+					createdByName: creatorUser?.tag || creator,
+					closedBy: interaction.user.id,
+					closedByName: interaction.user.tag,
+					closeReason: reason || "No reason given",
+					messages: messageData,
+				},
+				{
 					headers: {
-						"Content-Type": "application/json"
-					}
-				})
-				.catch(console.error);
-			_close(ts?.data, ticket);
+						"Content-Type": "application/json",
+						"X-Api-Key": apiKey,
+					},
+					timeout: 30000,
+				}
+			).catch((e) => { console.error("Transcript upload error:", e.message); return null; });
+
+			if (res?.data?.id) {
+				transcriptId = res.data.id;
+				transcriptUrl = `${TRANSCRIPT_DOMAIN}/t/${transcriptId}`;
+			}
+		} catch (e) {
+			console.error("Transcript generation error:", e);
+		}
+	}
+
+	// Finalize close
+	if (client.config.closeOption.closeTicketCategoryId)
+		(interaction.channel as TextChannel | null)?.setParent(client.config.closeOption.closeTicketCategoryId).catch((e) => console.log(e));
+
+	const msg = await interaction.channel?.messages.fetch(ticket.messageid);
+	const embed = new EmbedBuilder(msg?.embeds[0].data);
+
+	const rowAction = new ActionRowBuilder<ButtonBuilder>();
+	(msg?.components[0] as ActionRow<MessageActionRowComponent>)?.components?.map((x) => {
+		if (x.type !== ComponentType.Button) return;
+		const builder = new ButtonBuilder(x.data);
+		if (x.customId === "close") builder.setDisabled(true);
+		if (x.customId === "close_askReason") builder.setDisabled(true);
+		rowAction.addComponents(builder);
+	});
+
+	msg?.edit({
+		content: msg.content,
+		embeds: [embed],
+		components: [rowAction]
+	}).catch((e) => console.log(e));
+
+	if(interaction.channel && interaction.channel.type !== ChannelType.GuildText)
+		throw Error("Close util used in a non-text channel");
+
+	interaction.channel?.send({
+		content: transcriptUrl
+			? client.locales.getValue("ticketTranscriptCreated").replace("TRANSCRIPTURL", `<${transcriptUrl}>`)
+			: "> Transcript unavailable"
+	}).catch((e) => console.log(e));
+
+	let updatedTicket = await client.prisma.tickets.update({
+		data: {
+			closedby: interaction.user.id,
+			closedat: Date.now(),
+			closereason: reason,
+			transcript: transcriptUrl || null
+		},
+		where: {
+			channelid: interaction.channel?.id
 		}
 	});
+
+	const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+		new ButtonBuilder()
+			.setCustomId("deleteTicket")
+			.setLabel(client.locales.getSubValue("other", "deleteTicketButtonMSG"))
+			.setStyle(ButtonStyle.Danger)
+			.setDisabled(true)
+	);
+	const locale = client.locales;
+	const safeTicketCount = JSON.stringify(updatedTicket.id.toString()).slice(1, -1);
+	const safeReason = JSON.stringify(
+		(updatedTicket.closereason ?? client.locales.getSubValue("other", "noReasonGiven")).replace(/[\n\r]/g, "\\n")
+	).slice(1, -1);
+	const safeCloserName = JSON.stringify(interaction.user.tag).slice(1, -1);
+	interaction.channel?.send({
+		embeds: [
+			JSON.parse(
+				JSON.stringify(locale.getSubRawValue("embeds", "ticketClosed"))
+					.replace("TICKETCOUNT", safeTicketCount)
+					.replace("REASON", safeReason)
+					.replace("CLOSERNAME", safeCloserName)
+			)
+		],
+		components: [row]
+	}).catch((e) => console.log(e));
+
+	// Auto-delete after configurable delay
+	{
+		const delayMinutes = parseInt(client.runtimeConfig.get("closed_delete_delay") ?? "10", 10);
+		const delayMs = delayMinutes * 60 * 1000;
+
+		log(
+			{
+				LogType: "ticketDelete",
+				user: interaction.user,
+				ticketId: updatedTicket.id,
+				ticketCreatedAt: updatedTicket.createdat,
+				transcriptURL: updatedTicket.transcript ?? undefined
+			},
+			client
+		);
+
+		interaction.channel?.send({
+			content: `> This ticket will be deleted in ${delayMinutes} minute${delayMinutes !== 1 ? "s" : ""}.`
+		});
+		setTimeout(() => interaction.channel?.delete().catch((e) => console.log(e)), delayMs);
+	}
+
+	if (!client.config.closeOption.dmUser) return;
+	const footer = locale.getSubValue("embeds", "ticketClosedDM", "footer", "text").replace("ticket.pm", "");
+	const ticketClosedDMEmbed = new EmbedBuilder({
+		color: 0
+	})
+		.setColor((locale.getNoErrorSubValue("embeds", "ticketClosedDM", "color") as ColorResolvable) ?? client.config.mainColor)
+		.setDescription(
+			client.locales
+				.getSubValue("embeds", "ticketClosedDM", "description")
+				.replace("TICKETCOUNT", updatedTicket.id.toString())
+				.replace("TRANSCRIPTURL", transcriptUrl || "Unavailable")
+				.replace("REASON", updatedTicket.closereason ?? client.locales.getSubValue("other", "noReasonGiven"))
+				.replace("CLOSERNAME", interaction.user.tag)
+		)
+		.setFooter({
+			text: `ReforgedZ ${footer.trim() !== "" ? `- ${footer}` : ""}`,
+			iconURL: locale.getNoErrorSubValue("embeds", "ticketClosedDM", "footer", "iconUrl")
+		});
+
+	client.users.fetch(creator).then((user) => {
+		user.send({ embeds: [ticketClosedDMEmbed] }).catch((e) => console.log(e));
+	});
 }
-
-/*
-Copyright 2023 Sayrix (github.com/Sayrix)
-
-Licensed under the Creative Commons Attribution 4.0 International
-please check https://creativecommons.org/licenses/by/4.0 for more informations.
-*/

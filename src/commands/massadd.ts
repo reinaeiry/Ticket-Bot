@@ -1,5 +1,5 @@
 import {BaseCommand, ExtendedClient} from "../structure";
-import {CommandInteraction, SlashCommandBuilder, TextChannel} from "discord.js";
+import {ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder, TextChannel} from "discord.js";
 import {log} from "../utils/logs";
 
 /*
@@ -22,7 +22,7 @@ export default class MassAddCommand extends BaseCommand {
 	async execute(interaction: CommandInteraction) {
 
 		// In-case users will try things
-	    const users = await Promise.all((interaction.options.get("users", true).value as string)
+	    const users = await Promise.all(((interaction as ChatInputCommandInteraction).options.getString("users", true))
 			.replace(/\s/g, "") // Remove space incase user adds it as a seperator
 			.split(",") // Get a list from it
 			.filter((user) => user !== "") // anti seperator spams at the end lmao

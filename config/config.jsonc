@@ -1,0 +1,275 @@
+{
+	"clientId": "YOUR_BOT_CLIENT_ID",
+	"guildId": "YOUR_GUILD_ID",
+	"mainColor": "#f6c42f",
+	"lang": "main",
+
+	"openTicketChannelId": "YOUR_OPEN_TICKET_CHANNEL_ID",
+
+	"ticketTypes": [
+		{
+			"codeName": "na1-support",
+			"name": "NA1 Support",
+			"description": "Support for NA1 server issues",
+			"emoji": "🇺🇸",
+			"color": "",
+			"categoryId": "PLACEHOLDER",
+			"ticketNameOption": "na-1-TICKETCOUNT-USERNAME",
+			"customDescription": "**NA1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": [],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Time the Incident Occurred",
+					"placeholder": "e.g. 2026-04-11 14:30 UTC",
+					"style": "SHORT",
+					"maxLength": 200
+				},
+				{
+					"label": "Description of the Incident",
+					"placeholder": "Describe what happened in detail",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "Do you have evidence ready?",
+					"placeholder": "Yes or No",
+					"style": "SHORT",
+					"maxLength": 10
+				}
+			]
+		},
+		{
+			"codeName": "na2-support",
+			"name": "NA2 Support",
+			"description": "Support for NA2 server issues",
+			"emoji": "🇺🇸",
+			"color": "",
+			"categoryId": "PLACEHOLDER",
+			"ticketNameOption": "na-2-TICKETCOUNT-USERNAME",
+			"customDescription": "**NA2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": [],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Time the Incident Occurred",
+					"placeholder": "e.g. 2026-04-11 14:30 UTC",
+					"style": "SHORT",
+					"maxLength": 200
+				},
+				{
+					"label": "Description of the Incident",
+					"placeholder": "Describe what happened in detail",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "Do you have evidence ready?",
+					"placeholder": "Yes or No",
+					"style": "SHORT",
+					"maxLength": 10
+				}
+			]
+		},
+		{
+			"codeName": "eu1-support",
+			"name": "EU1 Support",
+			"description": "Support for EU1 server issues",
+			"emoji": "🇪🇺",
+			"color": "",
+			"categoryId": "PLACEHOLDER",
+			"ticketNameOption": "eu-1-TICKETCOUNT-USERNAME",
+			"customDescription": "**EU1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": [],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Time the Incident Occurred",
+					"placeholder": "e.g. 2026-04-11 14:30 UTC",
+					"style": "SHORT",
+					"maxLength": 200
+				},
+				{
+					"label": "Description of the Incident",
+					"placeholder": "Describe what happened in detail",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "Do you have evidence ready?",
+					"placeholder": "Yes or No",
+					"style": "SHORT",
+					"maxLength": 10
+				}
+			]
+		},
+		{
+			"codeName": "eu2-support",
+			"name": "EU2 Support",
+			"description": "Support for EU2 server issues",
+			"emoji": "🇪🇺",
+			"color": "",
+			"categoryId": "PLACEHOLDER",
+			"ticketNameOption": "eu-2-TICKETCOUNT-USERNAME",
+			"customDescription": "**EU2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Time of Incident:** REASON3\n**Description:** REASON4\n**Do you have evidence ready?** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": [],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Time the Incident Occurred",
+					"placeholder": "e.g. 2026-04-11 14:30 UTC",
+					"style": "SHORT",
+					"maxLength": 200
+				},
+				{
+					"label": "Description of the Incident",
+					"placeholder": "Describe what happened in detail",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "Do you have evidence ready?",
+					"placeholder": "Yes or No",
+					"style": "SHORT",
+					"maxLength": 10
+				}
+			]
+		},
+		{
+			"codeName": "ban-appeal",
+			"name": "Ban Appeal",
+			"description": "Appeal a ban on any server",
+			"emoji": "⚖️",
+			"color": "#ed4245",
+			"categoryId": "PLACEHOLDER",
+			"ticketNameOption": "appeal-TICKETCOUNT-USERNAME",
+			"customDescription": "**Ban Appeal**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Server Banned From:** REASON3\n**Reason for Unban:** REASON4\n**Additional Context:** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": [],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Which server were you banned from?",
+					"placeholder": "NA1, NA2, EU1, or EU2",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Why do you believe you should be unbanned?",
+					"placeholder": "Provide your reasoning",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				},
+				{
+					"label": "Additional context or evidence",
+					"placeholder": "Any links or information supporting your appeal",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				}
+			]
+		}
+	],
+	"ticketNameOption": "ticket-TICKETCOUNT-USERNAME",
+
+	"claimOption": {
+		"claimButton": true,
+		"nameWhenClaimed": "claimed-TICKETCOUNT-U_USERNAME",
+		"categoryWhenClaimed": ""
+	},
+
+	"rolesWhoHaveAccessToTheTickets": [],
+	"rolesWhoCanNotCreateTickets": [],
+
+	"pingRoleWhenOpened": false,
+	"roleToPingWhenOpenedId": [],
+
+	"logs": true,
+	"logsChannelId": "YOUR_LOGS_CHANNEL_ID",
+
+	"closeOption": {
+		"closeButton": true,
+		"dmUser": true,
+		"createTranscript": true,
+		"askReason": true,
+		"whoCanCloseTicket": "STAFFONLY",
+		"deleteTicket": true,
+		"closeTicketCategoryId": ""
+	},
+	"uuidType": "uuid",
+
+	"status": {
+		"enabled": true,
+		"text": "ReforgedZ Support",
+		"type": "WATCHING",
+		"url": "",
+		"status": "online"
+	},
+
+	"maxTicketOpened": 2,
+	"minimalTracking": true,
+	"showWSLog": false
+}

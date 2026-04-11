@@ -7,10 +7,12 @@ import {
 	ModalSubmitInteraction,
 	PermissionFlagsBits,
 	StringSelectMenuInteraction,
+	TextChannel,
 	TextInputComponent
 } from "discord.js";
 import { ExtendedClient, TicketType } from "../structure";
 import { log } from "./logs";
+import { startEvidenceMonitor } from "./evidenceMonitor";
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -224,6 +226,11 @@ export const createTicket = async (
 						components: []
 					})
 					.catch((e) => console.log(e));
+
+				// Start evidence monitor for support tickets (not ban appeals)
+				if (ticketType.codeName !== "ban-appeal") {
+					startEvidenceMonitor(channel as TextChannel, client, interaction.user.id);
+				}
 
 				resolve(true);
 			})
