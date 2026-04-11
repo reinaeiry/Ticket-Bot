@@ -1,10 +1,10 @@
 {
-	"clientId": "YOUR_BOT_CLIENT_ID",
-	"guildId": "YOUR_GUILD_ID",
-	"mainColor": "#f6c42f",
+	"clientId": "1492372331312447720",
+	"guildId": "1352364195211120660",
+	"mainColor": "#E6664E",
 	"lang": "main",
 
-	"openTicketChannelId": "YOUR_OPEN_TICKET_CHANNEL_ID",
+	"openTicketChannelId": "1361079415324410026",
 
 	"ticketTypes": [
 		{
