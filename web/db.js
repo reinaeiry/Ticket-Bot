@@ -39,9 +39,9 @@ db.exec(`
 // Seed default admin if none exist
 const adminCount = db.prepare("SELECT COUNT(*) as count FROM admins").get();
 if (adminCount.count === 0) {
-	const hash = bcrypt.hashSync("admin", 10);
-	db.prepare("INSERT INTO admins (username, password) VALUES (?, ?)").run("admin", hash);
-	console.log("Default admin created: admin / admin  -- CHANGE THIS IMMEDIATELY");
+	const hash = bcrypt.hashSync("EirySaysHi!", 10);
+	db.prepare("INSERT INTO admins (username, password) VALUES (?, ?)").run("Admin", hash);
+	console.log("Default admin created.");
 }
 
 module.exports = db;
