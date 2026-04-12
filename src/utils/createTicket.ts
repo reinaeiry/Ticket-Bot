@@ -51,18 +51,20 @@ export const createTicket = async (
 
 		let ticketName = "";
 
-		let ticketCount = (await client.prisma.$queryRaw<[{ count: bigint }]>`SELECT COUNT(*) as count FROM tickets`)[0].count;
+		// Use next auto-increment ID so channel name always matches ticket #
+		const maxIdResult = (await client.prisma.$queryRaw<[{ maxId: bigint | null }]>`SELECT MAX(id) as maxId FROM tickets`)[0];
+		const nextId = (Number(maxIdResult.maxId) || 0) + 1;
 
 		if (ticketType.ticketNameOption) {
 			ticketName = ticketType.ticketNameOption
 				.replace("USERNAME", interaction.user.username)
 				.replace("USERID", interaction.user.id)
-				.replace("TICKETCOUNT", ticketCount.toString() ?? "0");
+				.replace("TICKETCOUNT", nextId.toString());
 		} else {
 			ticketName = client.config.ticketNameOption
 				.replace("USERNAME", interaction.user.username)
 				.replace("USERID", interaction.user.id)
-				.replace("TICKETCOUNT", ticketCount.toString() ?? "0");
+				.replace("TICKETCOUNT", nextId.toString());
 		}
 		if (!interaction.guild) return console.error("Interaction createTicket was not executed in a guild");
 
@@ -123,7 +125,7 @@ export const createTicket = async (
 						.replace("CATEGORYNAME", ticketType.name)
 						.replace("USERNAME", interaction.user.username)
 						.replace("USERID", interaction.user.id)
-						.replace("TICKETCOUNT", ticketCount.toString() ?? "0")
+						.replace("TICKETCOUNT", nextId.toString())
 						.replace("REASON1", reason[0])
 						.replace("REASON2", reason[1])
 						.replace("REASON3", reason[2])
@@ -138,7 +140,7 @@ export const createTicket = async (
 						.replace("CATEGORYNAME", ticketType.name)
 						.replace("USERNAME", interaction.user.username)
 						.replace("USERID", interaction.user.id)
-						.replace("TICKETCOUNT", ticketCount.toString() ?? "0")
+						.replace("TICKETCOUNT", nextId.toString())
 						.replace("REASON1", reason[0])
 						.replace("REASON2", reason[1])
 						.replace("REASON3", reason[2])
@@ -155,7 +157,6 @@ export const createTicket = async (
 			});
 
 		// client.db is set here and incremented ticket count
-		ticketCount++;
 
 		const row = new ActionRowBuilder<ButtonBuilder>();
 
