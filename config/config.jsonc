@@ -326,8 +326,8 @@
 	"ticketNameOption": "ticket-TICKETCOUNT-USERNAME",
 
 	"claimOption": {
-		"claimButton": true,
-		"nameWhenClaimed": "claimed-TICKETCOUNT-U_USERNAME",
+		"claimButton": false,
+		"nameWhenClaimed": "",
 		"categoryWhenClaimed": ""
 	},
 
