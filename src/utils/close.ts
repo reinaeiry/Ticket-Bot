@@ -204,7 +204,7 @@ export async function close(
 
 	// Finalize close
 	if (client.config.closeOption.closeTicketCategoryId)
-		(interaction.channel as TextChannel | null)?.setParent(client.config.closeOption.closeTicketCategoryId).catch((e) => console.log(e));
+		(interaction.channel as TextChannel | null)?.setParent(client.config.closeOption.closeTicketCategoryId, { lockPermissions: false }).catch((e) => console.log(e));
 
 	const msg = await interaction.channel?.messages.fetch(ticket.messageid);
 	const embed = new EmbedBuilder(msg?.embeds[0].data);

@@ -23,19 +23,15 @@ export async function autoCloseTicket(
 	if (!ticket || ticket.closedat) return;
 
 	const creator = ticket.creator;
-	const invited = JSON.parse(ticket.invited) as string[];
 
-	// Revoke creator's access
-	await channel.permissionOverwrites
-		.edit(creator, { ViewChannel: false })
-		.catch((e) => console.log(e));
-
-	// Revoke invited users' access
-	for (const user of invited) {
-		await channel.permissionOverwrites
-			.edit(user, { ViewChannel: false })
-			.catch((e) => console.log(e));
+	// Lock the channel - nobody sees closed tickets except the bot
+	const overwrites: any[] = [
+		{ id: channel.guild.roles.everyone.id, deny: ["ViewChannel"] },
+	];
+	if (client.user) {
+		overwrites.push({ id: client.user.id, allow: ["ViewChannel", "SendMessages", "ManageChannels"] });
 	}
+	await channel.permissionOverwrites.set(overwrites).catch((e: unknown) => console.log(e));
 
 	// Disable close buttons on the original message
 	try {
