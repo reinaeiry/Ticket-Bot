@@ -77,7 +77,6 @@ a:hover{color:var(--accent-hover)}
 	<h1><span>Reforged</span>Z Transcripts</h1>
 	<div class="header-right">
 		<span id="adminName"></span>
-		<button class="btn" onclick="changePassword()">Change Password</button>
 		<button class="btn" onclick="openAppeals()">Access Application / Ban Appeal Transcripts</button>
 		<button class="btn btn-accent" onclick="logout()">Logout</button>
 	</div>
@@ -210,13 +209,6 @@ async function logout(){
 function openAppeals(){window.location.href="/appeals"}
 
 document.getElementById("showAutoClosed").addEventListener("change",()=>loadTickets(1,currentSearch));
-
-function changePassword(){
-	const cur=prompt("Current password:");if(!cur)return;
-	const nw=prompt("New password:");if(!nw)return;
-	fetch("/api/auth/change-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({currentPassword:cur,newPassword:nw})})
-		.then(r=>r.json()).then(d=>{if(d.success)alert("Password changed!");else alert(d.error||"Failed")});
-}
 
 checkAuth();
 loadTickets();
