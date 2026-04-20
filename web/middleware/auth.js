@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me";
+const APPEAL_JWT_SECRET = process.env.APPEAL_JWT_SECRET || JWT_SECRET + ":appeal";
 
 function requireAuth(req, res, next) {
 	const token = req.cookies?.token || req.headers.authorization?.replace("Bearer ", "");
@@ -15,6 +16,31 @@ function requireAuth(req, res, next) {
 	}
 }
 
+function requireAppealAuth(req, res, next) {
+	requireAuth(req, res, (err) => {
+		if (err) return;
+		const appealToken = req.cookies?.appealToken;
+		if (!appealToken) return res.status(401).json({ error: "Appeal authentication required" });
+		try {
+			jwt.verify(appealToken, APPEAL_JWT_SECRET);
+			next();
+		} catch {
+			return res.status(401).json({ error: "Appeal session expired" });
+		}
+	});
+}
+
+function hasAppealAuth(req) {
+	const appealToken = req.cookies?.appealToken;
+	if (!appealToken) return false;
+	try {
+		jwt.verify(appealToken, APPEAL_JWT_SECRET);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 function requireApiKey(req, res, next) {
 	const key = req.headers["x-api-key"] || req.query.key;
 	if (!key || key !== process.env.API_KEY) {
@@ -23,4 +49,4 @@ function requireApiKey(req, res, next) {
 	next();
 }
 
-module.exports = { requireAuth, requireApiKey };
+module.exports = { requireAuth, requireAppealAuth, hasAppealAuth, requireApiKey, APPEAL_JWT_SECRET };

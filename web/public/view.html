@@ -127,6 +127,14 @@ function renderMsg(msg,prev){
 async function load(){
 	try{
 		const r=await fetch(`/api/transcript/${tid}`);
+		if(r.status===401){
+			document.getElementById("messages").innerHTML='<div class="error">Restricted — <a href="/appeals" style="color:var(--accent)">unlock ban appeal transcripts</a> to view</div>';
+			return;
+		}
+		if(r.status===403){
+			document.getElementById("messages").innerHTML='<div class="error">This ticket was auto-closed — no transcript recorded</div>';
+			return;
+		}
 		if(!r.ok)throw 0;
 		const d=await r.json();
 		document.getElementById("channelName").textContent=d.channelName||`Ticket #${d.ticketId}`;

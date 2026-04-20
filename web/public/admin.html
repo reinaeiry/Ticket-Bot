@@ -61,6 +61,15 @@ a:hover{color:var(--accent-hover)}
 
 .empty{text-align:center;padding:48px;color:var(--text-ghost)}
 .time{color:var(--text-ghost);font-size:.78rem}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+.toggle{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-dim);cursor:pointer;user-select:none}
+.toggle input{appearance:none;width:34px;height:18px;background:var(--surface-raised);border:1px solid var(--border);border-radius:10px;position:relative;cursor:pointer;transition:all .2s;margin:0;padding:0}
+.toggle input::before{content:'';position:absolute;top:1px;left:1px;width:14px;height:14px;background:var(--text-ghost);border-radius:50%;transition:all .2s}
+.toggle input:checked{background:var(--accent-dim);border-color:var(--accent)}
+.toggle input:checked::before{background:var(--accent);left:17px}
+.muted-row td{opacity:.55}
+.auto-badge{display:inline-block;padding:2px 8px;border-radius:3px;background:rgba(241,196,15,.12);color:#f1c40f;border:1px solid rgba(241,196,15,.25);font-size:.7rem;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.no-link{color:var(--text-ghost);font-size:.78rem;font-style:italic}
 </style>
 </head>
 <body>
@@ -68,6 +77,8 @@ a:hover{color:var(--accent-hover)}
 	<h1><span>Reforged</span>Z Transcripts</h1>
 	<div class="header-right">
 		<span id="adminName"></span>
+		<button class="btn" onclick="changePassword()">Change Password</button>
+		<button class="btn" onclick="openAppeals()">Access Ban Appeal Transcripts</button>
 		<button class="btn btn-accent" onclick="logout()">Logout</button>
 	</div>
 </header>
@@ -80,6 +91,9 @@ a:hover{color:var(--accent-hover)}
 		<input type="text" id="searchInput" placeholder="Search by ticket #, player name, category, or content..." autofocus>
 		<button class="btn btn-accent" onclick="search()">Search</button>
 		<button class="btn" onclick="clearSearch()">Clear</button>
+	</div>
+	<div class="toolbar">
+		<label class="toggle"><input type="checkbox" id="showAutoClosed"> Show Auto-Closed</label>
 	</div>
 	<div id="tableWrap">
 		<table>
@@ -127,10 +141,13 @@ function fmtDate(ts){
 
 function truncate(s,n){if(!s)return"-";return s.length>n?s.substring(0,n)+"...":s;}
 
+function esc(s){const d=document.createElement("div");d.textContent=s==null?"":String(s);return d.innerHTML}
+
 async function loadTickets(page=1,search=""){
 	currentPage=page;currentSearch=search;
 	const params=new URLSearchParams({page,limit:50});
 	if(search)params.set("search",search);
+	if(document.getElementById("showAutoClosed").checked)params.set("showAutoClosed","1");
 	try{
 		const r=await fetch("/api/tickets?"+params);
 		if(!r.ok)throw 0;
@@ -141,17 +158,26 @@ async function loadTickets(page=1,search=""){
 		if(d.tickets.length===0){
 			tbody.innerHTML='<tr><td colspan="9" class="empty">No transcripts found</td></tr>';
 		}else{
-			tbody.innerHTML=d.tickets.map(t=>`<tr>
-				<td><strong>#${t.ticketId||"-"}</strong></td>
-				<td>${t.channelName||"-"}</td>
-				<td><span class="cat-badge ${catClass(t.category)}">${t.category||"Unknown"}</span></td>
-				<td>${t.createdByName||"-"}</td>
-				<td>${t.closedByName||"-"}</td>
-				<td>${truncate(t.closeReason,40)}</td>
-				<td>${t.messageCount||0}</td>
-				<td class="time">${fmtDate(t.closedAt)}</td>
-				<td><a href="/t/${t.id}" target="_blank">View</a></td>
-			</tr>`).join("");
+			tbody.innerHTML=d.tickets.map(t=>{
+				const reasonCell=t.autoClosed
+					?`<span class="auto-badge">Autoclosed - No Evidence</span>`
+					:esc(truncate(t.closeReason,40));
+				const actionCell=t.autoClosed
+					?`<span class="no-link">No transcript</span>`
+					:`<a href="/t/${esc(t.id)}" target="_blank">View</a>`;
+				const rowClass=t.autoClosed?"muted-row":"";
+				return `<tr class="${rowClass}">
+					<td><strong>#${esc(t.ticketId)||"-"}</strong></td>
+					<td>${esc(t.channelName)||"-"}</td>
+					<td><span class="cat-badge ${catClass(t.category)}">${esc(t.category)||"Unknown"}</span></td>
+					<td>${esc(t.createdByName)||"-"}</td>
+					<td>${esc(t.closedByName)||"-"}</td>
+					<td>${reasonCell}</td>
+					<td>${t.messageCount||0}</td>
+					<td class="time">${fmtDate(t.closedAt)}</td>
+					<td>${actionCell}</td>
+				</tr>`;
+			}).join("");
 		}
 		renderPagination(d.page,d.totalPages);
 	}catch{document.getElementById("tbody").innerHTML='<tr><td colspan="9" class="empty">Failed to load</td></tr>'}
@@ -180,6 +206,10 @@ async function logout(){
 	await fetch("/api/auth/logout",{method:"POST"});
 	window.location.href="/login";
 }
+
+function openAppeals(){window.location.href="/appeals"}
+
+document.getElementById("showAutoClosed").addEventListener("change",()=>loadTickets(1,currentSearch));
 
 function changePassword(){
 	const cur=prompt("Current password:");if(!cur)return;

@@ -23,6 +23,10 @@ function startWebServer() {
 		res.sendFile(path.join(__dirname, "public", "admin.html"));
 	});
 
+	app.get("/appeals", (req, res) => {
+		res.sendFile(path.join(__dirname, "public", "appeals.html"));
+	});
+
 	app.get("/login", (req, res) => {
 		res.sendFile(path.join(__dirname, "public", "login.html"));
 	});

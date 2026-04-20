@@ -21,7 +21,9 @@ db.exec(`
     close_reason TEXT,
     closed_at INTEGER DEFAULT (strftime('%s','now') * 1000),
     message_count INTEGER DEFAULT 0,
-    messages TEXT NOT NULL
+    messages TEXT NOT NULL,
+    auto_closed INTEGER DEFAULT 0,
+    restricted INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS admins (
@@ -35,6 +37,12 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_transcripts_created_by_name ON transcripts(created_by_name);
   CREATE INDEX IF NOT EXISTS idx_transcripts_closed_at ON transcripts(closed_at);
 `);
+
+// Backfill new columns for existing installs
+const cols = db.prepare(`PRAGMA table_info(transcripts)`).all();
+const hasCol = (n) => cols.some((c) => c.name === n);
+if (!hasCol("auto_closed")) db.exec(`ALTER TABLE transcripts ADD COLUMN auto_closed INTEGER DEFAULT 0`);
+if (!hasCol("restricted")) db.exec(`ALTER TABLE transcripts ADD COLUMN restricted INTEGER DEFAULT 0`);
 
 // Seed default admin if none exist
 const adminCount = db.prepare("SELECT COUNT(*) as count FROM admins").get();

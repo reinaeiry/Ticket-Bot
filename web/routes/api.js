@@ -1,7 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
-const { requireAuth, requireApiKey } = require("../middleware/auth");
+const { requireAuth, requireApiKey, requireAppealAuth, hasAppealAuth } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -18,14 +18,16 @@ router.post("/upload", requireApiKey, (req, res) => {
 			closedByName,
 			closeReason,
 			messages,
+			autoClosed,
+			restricted,
 		} = req.body;
 
 		const id = crypto.randomUUID();
 		const messageCount = Array.isArray(messages) ? messages.length : 0;
 
 		db.prepare(`
-			INSERT INTO transcripts (id, ticket_id, channel_name, category, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			INSERT INTO transcripts (id, ticket_id, channel_name, category, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages, auto_closed, restricted)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			id,
 			ticketId || null,
@@ -39,6 +41,8 @@ router.post("/upload", requireApiKey, (req, res) => {
 			Date.now(),
 			messageCount,
 			JSON.stringify(messages || []),
+			autoClosed ? 1 : 0,
+			restricted ? 1 : 0,
 		);
 
 		res.json({ id });
@@ -48,10 +52,18 @@ router.post("/upload", requireApiKey, (req, res) => {
 	}
 });
 
-// GET /api/transcript/:id - Get a single transcript (public)
+// GET /api/transcript/:id - Get a single transcript
 router.get("/transcript/:id", (req, res) => {
 	const row = db.prepare("SELECT * FROM transcripts WHERE id = ?").get(req.params.id);
 	if (!row) return res.status(404).json({ error: "Transcript not found" });
+
+	if (row.auto_closed) {
+		return res.status(403).json({ error: "Auto-closed tickets have no transcript" });
+	}
+
+	if (row.restricted && !hasAppealAuth(req)) {
+		return res.status(401).json({ error: "Restricted transcript - appeal authentication required" });
+	}
 
 	res.json({
 		id: row.id,
@@ -65,44 +77,95 @@ router.get("/transcript/:id", (req, res) => {
 		closeReason: row.close_reason,
 		closedAt: row.closed_at,
 		messageCount: row.message_count,
+		autoClosed: !!row.auto_closed,
+		restricted: !!row.restricted,
 		messages: JSON.parse(row.messages),
 	});
 });
 
-// GET /api/tickets - Admin search/list tickets
-router.get("/tickets", requireAuth, (req, res) => {
-	const { search, page = 1, limit = 50 } = req.query;
-	const offset = (parseInt(page) - 1) * parseInt(limit);
+function buildListQuery({ search, includeAutoClosed, restrictedFilter }) {
+	const clauses = [];
+	const params = [];
 
-	let where = "";
-	let params = [];
+	if (restrictedFilter === "only") clauses.push("restricted = 1");
+	else if (restrictedFilter === "exclude") clauses.push("(restricted = 0 OR restricted IS NULL)");
+
+	if (!includeAutoClosed) clauses.push("(auto_closed = 0 OR auto_closed IS NULL)");
 
 	if (search && search.trim()) {
 		const s = `%${search.trim()}%`;
-		where = `WHERE channel_name LIKE ? OR created_by_name LIKE ? OR close_reason LIKE ? OR category LIKE ? OR CAST(ticket_id AS TEXT) LIKE ?`;
-		params = [s, s, s, s, s];
+		clauses.push(`(channel_name LIKE ? OR created_by_name LIKE ? OR close_reason LIKE ? OR category LIKE ? OR CAST(ticket_id AS TEXT) LIKE ?)`);
+		params.push(s, s, s, s, s);
 	}
+
+	const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+	return { where, params };
+}
+
+function mapListRow(r) {
+	return {
+		id: r.id,
+		ticketId: r.ticket_id,
+		channelName: r.channel_name,
+		category: r.category,
+		createdByName: r.created_by_name,
+		closedByName: r.closed_by_name,
+		closeReason: r.close_reason,
+		closedAt: r.closed_at,
+		messageCount: r.message_count,
+		autoClosed: !!r.auto_closed,
+		restricted: !!r.restricted,
+	};
+}
+
+// GET /api/tickets - Admin search/list regular tickets (restricted hidden)
+router.get("/tickets", requireAuth, (req, res) => {
+	const { search, page = 1, limit = 50, showAutoClosed } = req.query;
+	const offset = (parseInt(page) - 1) * parseInt(limit);
+
+	const { where, params } = buildListQuery({
+		search,
+		includeAutoClosed: showAutoClosed === "1" || showAutoClosed === "true",
+		restrictedFilter: "exclude",
+	});
 
 	const countRow = db.prepare(`SELECT COUNT(*) as total FROM transcripts ${where}`).get(...params);
 	const rows = db.prepare(`
-		SELECT id, ticket_id, channel_name, category, created_by_name, closed_by_name, close_reason, closed_at, message_count
+		SELECT id, ticket_id, channel_name, category, created_by_name, closed_by_name, close_reason, closed_at, message_count, auto_closed, restricted
 		FROM transcripts ${where}
 		ORDER BY closed_at DESC
 		LIMIT ? OFFSET ?
 	`).all(...params, parseInt(limit), offset);
 
 	res.json({
-		tickets: rows.map((r) => ({
-			id: r.id,
-			ticketId: r.ticket_id,
-			channelName: r.channel_name,
-			category: r.category,
-			createdByName: r.created_by_name,
-			closedByName: r.closed_by_name,
-			closeReason: r.close_reason,
-			closedAt: r.closed_at,
-			messageCount: r.message_count,
-		})),
+		tickets: rows.map(mapListRow),
+		total: countRow.total,
+		page: parseInt(page),
+		totalPages: Math.ceil(countRow.total / parseInt(limit)),
+	});
+});
+
+// GET /api/appeal-tickets - Ban appeals / applications list (requires appeal auth)
+router.get("/appeal-tickets", requireAppealAuth, (req, res) => {
+	const { search, page = 1, limit = 50 } = req.query;
+	const offset = (parseInt(page) - 1) * parseInt(limit);
+
+	const { where, params } = buildListQuery({
+		search,
+		includeAutoClosed: true,
+		restrictedFilter: "only",
+	});
+
+	const countRow = db.prepare(`SELECT COUNT(*) as total FROM transcripts ${where}`).get(...params);
+	const rows = db.prepare(`
+		SELECT id, ticket_id, channel_name, category, created_by_name, closed_by_name, close_reason, closed_at, message_count, auto_closed, restricted
+		FROM transcripts ${where}
+		ORDER BY closed_at DESC
+		LIMIT ? OFFSET ?
+	`).all(...params, parseInt(limit), offset);
+
+	res.json({
+		tickets: rows.map(mapListRow),
 		total: countRow.total,
 		page: parseInt(page),
 		totalPages: Math.ceil(countRow.total / parseInt(limit)),
@@ -111,6 +174,11 @@ router.get("/tickets", requireAuth, (req, res) => {
 
 // DELETE /api/transcript/:id - Admin delete a transcript
 router.delete("/transcript/:id", requireAuth, (req, res) => {
+	const row = db.prepare("SELECT restricted FROM transcripts WHERE id = ?").get(req.params.id);
+	if (!row) return res.status(404).json({ error: "Not found" });
+	if (row.restricted && !hasAppealAuth(req)) {
+		return res.status(401).json({ error: "Appeal authentication required" });
+	}
 	const result = db.prepare("DELETE FROM transcripts WHERE id = ?").run(req.params.id);
 	if (result.changes === 0) return res.status(404).json({ error: "Not found" });
 	res.json({ success: true });
