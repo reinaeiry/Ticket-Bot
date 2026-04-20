@@ -112,7 +112,10 @@ export async function close(
 
 	let transcriptUrl = "";
 
-	const isBanAppeal = ticketType?.codeName === "ban-appeal" || ticketType?.codeName === "dev-application";
+	const isRestricted =
+		ticketType?.codeName === "ban-appeal" ||
+		ticketType?.codeName === "dev-application" ||
+		ticketType?.codeName === "gm-application";
 
 	if (client.config.closeOption.createTranscript) {
 		try {
@@ -126,7 +129,7 @@ export async function close(
 				closedBy: interaction.user.id,
 				closedByName: interaction.user.tag,
 				closeReason: reason || "No reason given",
-				restricted: isBanAppeal,
+				restricted: isRestricted,
 			});
 		} catch (e) {
 			console.error("Transcript generation error:", e);

@@ -128,7 +128,7 @@ async function load(){
 	try{
 		const r=await fetch(`/api/transcript/${tid}`);
 		if(r.status===401){
-			document.getElementById("messages").innerHTML='<div class="error">Restricted — <a href="/appeals" style="color:var(--accent)">unlock ban appeal transcripts</a> to view</div>';
+			document.getElementById("messages").innerHTML='<div class="error">Restricted — <a href="/appeals" style="color:var(--accent)">unlock application / ban appeal transcripts</a> to view</div>';
 			return;
 		}
 		if(r.status===403){
