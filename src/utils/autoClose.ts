@@ -2,15 +2,13 @@ import {
 	ActionRow,
 	ActionRowBuilder,
 	ButtonBuilder,
-	ButtonStyle,
-	Collection,
 	ComponentType,
 	EmbedBuilder,
-	Message,
 	MessageActionRowComponent,
 	TextChannel,
 } from "discord.js";
-import { ExtendedClient } from "../structure";
+import { ExtendedClient, TicketType } from "../structure";
+import { uploadTranscript } from "./uploadTranscript";
 
 export async function autoCloseTicket(
 	channel: TextChannel,
@@ -55,12 +53,36 @@ export async function autoCloseTicket(
 		console.log(e);
 	}
 
+	// Upload transcript flagged as auto-closed
+	const autoCloseReason = "Autoclosed - No Evidence";
+	let transcriptUrl = "";
+	if (client.config.closeOption.createTranscript) {
+		try {
+			const ticketType = JSON.parse(ticket.category) as TicketType;
+			const creatorUser = await client.users.fetch(creator).catch(() => null);
+			transcriptUrl = await uploadTranscript({
+				ticketId: ticket.id,
+				channel,
+				category: ticketType?.name || "Unknown",
+				createdBy: creator,
+				createdByName: creatorUser?.tag || creator,
+				closedBy: client.user?.id ?? "system",
+				closedByName: client.user?.tag ?? "system",
+				closeReason: autoCloseReason,
+				autoClosed: true,
+			});
+		} catch (e) {
+			console.error("Auto-close transcript error:", e);
+		}
+	}
+
 	// Update database
 	const updatedTicket = await client.prisma.tickets.update({
 		data: {
 			closedby: client.user?.id ?? "system",
 			closedat: Date.now(),
-			closereason: reason,
+			closereason: autoCloseReason,
+			transcript: transcriptUrl || null,
 		},
 		where: { channelid: channel.id },
 	});

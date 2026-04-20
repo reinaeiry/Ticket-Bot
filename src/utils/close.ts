@@ -1,4 +1,3 @@
-import axios from "axios";
 import {
 	ActionRow,
 	ActionRowBuilder,
@@ -6,21 +5,18 @@ import {
 	ButtonInteraction,
 	ButtonStyle,
 	ChannelType,
-	Collection,
 	ColorResolvable,
 	CommandInteraction,
 	ComponentType,
 	EmbedBuilder,
 	GuildMember,
-	Message,
 	MessageActionRowComponent,
 	ModalSubmitInteraction,
 	TextChannel
 } from "discord.js";
 import { ExtendedClient, TicketType } from "../structure";
 import { log } from "./logs";
-
-const TRANSCRIPT_DOMAIN = "https://transcripts.reforgedz.net";
+import { uploadTranscript } from "./uploadTranscript";
 
 type ticketType = {
 	id: number;
@@ -114,89 +110,24 @@ export async function close(
 		})
 		.catch((e) => console.log(e));
 
-	// Fetch all messages from the channel
-	async function fetchAll() {
-		const collArray: Collection<string, Message<true | false>>[] = [];
-		let lastID = (interaction.channel as TextChannel | null)?.lastMessageId;
-		// eslint-disable-next-line no-constant-condition
-		while (true) {
-			if (!lastID) break;
-			const fetched = await interaction.channel?.messages.fetch({ limit: 100, before: lastID });
-			if (fetched?.size === 0) break;
-			if (fetched) collArray.push(fetched);
-			lastID = fetched?.last()?.id;
-			if (fetched?.size !== 100) break;
-		}
-		if (collArray.length === 0) return new Collection<string, Message>();
-		return collArray[0].concat(...collArray.slice(1));
-	}
-
-	// Build transcript data
 	let transcriptUrl = "";
-	let transcriptId = "";
 
 	const isBanAppeal = ticketType?.codeName === "ban-appeal" || ticketType?.codeName === "dev-application";
 
-	if (client.config.closeOption.createTranscript && !isBanAppeal) {
+	if (client.config.closeOption.createTranscript) {
 		try {
-			const messages = await fetchAll();
 			const creatorUser = await client.users.fetch(creator).catch(() => null);
-
-			// Convert Discord messages to a storable format
-			const messageData = messages.reverse().map((msg) => ({
-				author: {
-					id: msg.author.id,
-					username: msg.author.tag,
-					avatar: msg.author.displayAvatarURL({ size: 64 }),
-					bot: msg.author.bot,
-				},
-				content: msg.content,
-				timestamp: msg.createdAt.toISOString(),
-				embeds: msg.embeds.map((e) => ({
-					title: e.title,
-					description: e.description,
-					color: e.color,
-					fields: e.fields,
-					footer: e.footer,
-					thumbnail: e.thumbnail,
-					image: e.image,
-				})),
-				attachments: msg.attachments.map((a) => ({
-					name: a.name,
-					url: a.url,
-					proxyURL: a.proxyURL,
-					size: a.size,
-					contentType: a.contentType,
-				})),
-			}));
-
-			const apiKey = process.env.TRANSCRIPT_API_KEY || "";
-			const res = await axios.post(
-				`${TRANSCRIPT_DOMAIN}/api/upload`,
-				{
-					ticketId: ticket.id,
-					channelName: (interaction.channel as TextChannel).name,
-					category: ticketType?.name || "Unknown",
-					createdBy: creator,
-					createdByName: creatorUser?.tag || creator,
-					closedBy: interaction.user.id,
-					closedByName: interaction.user.tag,
-					closeReason: reason || "No reason given",
-					messages: messageData,
-				},
-				{
-					headers: {
-						"Content-Type": "application/json",
-						"X-Api-Key": apiKey,
-					},
-					timeout: 30000,
-				}
-			).catch((e) => { console.error("Transcript upload error:", e.message); return null; });
-
-			if (res?.data?.id) {
-				transcriptId = res.data.id;
-				transcriptUrl = `${TRANSCRIPT_DOMAIN}/t/${transcriptId}`;
-			}
+			transcriptUrl = await uploadTranscript({
+				ticketId: ticket.id,
+				channel: interaction.channel as TextChannel,
+				category: ticketType?.name || "Unknown",
+				createdBy: creator,
+				createdByName: creatorUser?.tag || creator,
+				closedBy: interaction.user.id,
+				closedByName: interaction.user.tag,
+				closeReason: reason || "No reason given",
+				restricted: isBanAppeal,
+			});
 		} catch (e) {
 			console.error("Transcript generation error:", e);
 		}
@@ -292,7 +223,18 @@ export async function close(
 		setTimeout(() => interaction.channel?.delete().catch((e) => console.log(e)), delayMs);
 	}
 
-	if (!client.config.closeOption.dmUser || isBanAppeal) return;
+	// DM the closer a copy with reason + transcript link
+	{
+		const creatorUser = await client.users.fetch(creator).catch(() => null);
+		const creatorLabel = creatorUser?.tag ?? creator;
+		const closerDmLines = [
+			`You closed ticket #${updatedTicket.id} by ${creatorLabel} with reason: ${updatedTicket.closereason ?? "No reason given"}`,
+		];
+		if (transcriptUrl) closerDmLines.push(`Transcript: ${transcriptUrl}`);
+		interaction.user.send({ content: closerDmLines.join("\n") }).catch((e) => console.log(e));
+	}
+
+	if (!client.config.closeOption.dmUser) return;
 	const footer = locale.getSubValue("embeds", "ticketClosedDM", "footer", "text");
 	const ticketClosedDMEmbed = new EmbedBuilder({
 		color: 0
