@@ -240,7 +240,7 @@
 			"color": "#f1c40f",
 			"categoryId": "PLACEHOLDER",
 			"ticketNameOption": "gmapp-TICKETCOUNT-USERNAME",
-			"customDescription": "**Gamemaster Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Prior Experience:** REASON3\n**Hours on Server:** REASON4\n**Acknowledgement:** REASON5",
+			"customDescription": "**Gamemaster Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Prior Experience:** REASON3\n**Hours on Server:** REASON4\n**Servers:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
 			"staffRoles": ["1360329397415972926", "1458642423889662048"],
@@ -270,10 +270,10 @@
 					"maxLength": 100
 				},
 				{
-					"label": "GM Acknowledgement",
-					"placeholder": "You cannot play as a regular player as a GM. Why do you accept this?",
-					"style": "PARAGRAPH",
-					"maxLength": 4000
+					"label": "What servers would you like to GM on?",
+					"placeholder": "NA1 / NA2 / EU1 / EU2 / All Servers",
+					"style": "SHORT",
+					"maxLength": 100
 				}
 			]
 		},
