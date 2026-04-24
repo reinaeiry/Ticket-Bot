@@ -4,8 +4,9 @@
   "description": "ReforgedZ ticket bot + transcript server",
   "main": "start.js",
   "scripts": {
-    "setup": "npm install && npx prisma generate && npx prisma db push",
+    "setup": "npm install && npx prisma generate && npx prisma db push && npm run build",
     "build": "rimraf dist && tsc",
+    "postinstall": "npx prisma generate && npm run build",
     "start": "node start.js",
     "start:bot": "node dist/index.js",
     "start:web": "node web/server.js"
