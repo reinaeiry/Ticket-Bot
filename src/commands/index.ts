@@ -16,6 +16,7 @@ import SetClosedDelayCommand from "./setcloseddelay";
 import GmAppCategoryOpenCommand from "./gmappcategoryopen";
 import CloseCategoryCommand from "./closecategory";
 import DevAppCategoryOpenCommand from "./devappcategoryopen";
+import SyncPermsCommand from "./syncperms";
 
 export {
 	AddCommand,
@@ -36,4 +37,5 @@ export {
 	GmAppCategoryOpenCommand,
 	CloseCategoryCommand,
 	DevAppCategoryOpenCommand,
+	SyncPermsCommand,
 };
