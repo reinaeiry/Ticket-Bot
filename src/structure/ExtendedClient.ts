@@ -7,7 +7,7 @@ import {
 	AddCommand, MassAddCommand, ClaimCommand, CloseCommand, RemoveCommand, RenameCommand, clearDM,
 	Na1CategoryOpenCommand, Na2CategoryOpenCommand, Eu1CategoryOpenCommand, Eu2CategoryOpenCommand,
 	BanAppealCategoryOpenCommand, ClaimedCategoryCommand, SetRoleCommand, SetClosedDelayCommand,
-	GmAppCategoryOpenCommand, CloseCategoryCommand, DevAppCategoryOpenCommand,
+	GmAppCategoryOpenCommand, CloseCategoryCommand, DevAppCategoryOpenCommand, SyncPermsCommand,
 } from "../commands";
 import {InteractionCreateEvent, ReadyEvent, MessageCreateEvent} from "../events";
 import {jsonc} from "jsonc";
@@ -48,6 +48,7 @@ export default class ExtendedClient extends Client {
 			[GmAppCategoryOpenCommand.data.name, new GmAppCategoryOpenCommand(this)],
 			[CloseCategoryCommand.data.name, new CloseCategoryCommand(this)],
 			[DevAppCategoryOpenCommand.data.name, new DevAppCategoryOpenCommand(this)],
+			[SyncPermsCommand.data.name, new SyncPermsCommand(this)],
 		]);
 		this.loadEvents();
 
@@ -133,6 +134,7 @@ export default class ExtendedClient extends Client {
 			GmAppCategoryOpenCommand.data.toJSON(),
 			CloseCategoryCommand.data.toJSON(),
 			DevAppCategoryOpenCommand.data.toJSON(),
+			SyncPermsCommand.data.toJSON(),
 		];
 
 		const { guildId } = jsonc.parse(fs.readFileSync(path.join(__dirname, "../../config/config.jsonc"), "utf8"));
