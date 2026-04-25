@@ -172,6 +172,20 @@ router.get("/appeal-tickets", requireAppealAuth, (req, res) => {
 	});
 });
 
+// GET /api/stats/closers - Leaderboard of human admin closers (excludes auto-closed and restricted)
+router.get("/stats/closers", requireAuth, (req, res) => {
+	const rows = db.prepare(`
+		SELECT closed_by AS closedBy, closed_by_name AS closedByName, COUNT(*) AS count
+		FROM transcripts
+		WHERE (auto_closed = 0 OR auto_closed IS NULL)
+		  AND (restricted = 0 OR restricted IS NULL)
+		  AND closed_by IS NOT NULL
+		GROUP BY closed_by, closed_by_name
+		ORDER BY count DESC, closed_by_name ASC
+	`).all();
+	res.json({ closers: rows });
+});
+
 // DELETE /api/transcript/:id - Admin delete a transcript
 router.delete("/transcript/:id", requireAuth, (req, res) => {
 	const row = db.prepare("SELECT restricted FROM transcripts WHERE id = ?").get(req.params.id);

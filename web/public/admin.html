@@ -70,6 +70,23 @@ a:hover{color:var(--accent-hover)}
 .muted-row td{opacity:.55}
 .auto-badge{display:inline-block;padding:2px 8px;border-radius:3px;background:rgba(241,196,15,.12);color:#f1c40f;border:1px solid rgba(241,196,15,.25);font-size:.7rem;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px}
 .no-link{color:var(--text-ghost);font-size:.78rem;font-style:italic}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:8px;width:560px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.modal::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.modal-head{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-family:'Oswald',sans-serif;font-size:1.1rem;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.modal-head .close-x{background:none;border:none;color:var(--text-ghost);font-size:1.4rem;cursor:pointer;padding:0;line-height:1;transition:color .15s}
+.modal-head .close-x:hover{color:var(--text)}
+.modal-body{padding:8px 0;overflow-y:auto;flex:1}
+.stats-table{width:100%;border-collapse:collapse}
+.stats-table th{padding:10px 24px;text-align:left;font-family:'Oswald',sans-serif;font-size:.72rem;color:var(--text-ghost);font-weight:600;text-transform:uppercase;letter-spacing:.8px;background:var(--bg-black);position:sticky;top:0}
+.stats-table th.right{text-align:right}
+.stats-table td{padding:10px 24px;border-top:1px solid var(--border);font-size:.88rem}
+.stats-table td.right{text-align:right;font-family:'Oswald',sans-serif;font-weight:600;color:var(--text)}
+.stats-table tr:first-child td{border-top:none}
+.rank{display:inline-block;width:24px;color:var(--text-ghost);font-family:'Oswald',sans-serif;font-size:.78rem}
+.rank.top{color:var(--accent);font-weight:600}
 </style>
 </head>
 <body>
@@ -77,6 +94,7 @@ a:hover{color:var(--accent-hover)}
 	<h1><span>Reforged</span>Z Transcripts</h1>
 	<div class="header-right">
 		<span id="adminName"></span>
+		<button class="btn" onclick="openStats()">Admin Stats</button>
 		<button class="btn" onclick="openAppeals()">Access Application / Ban Appeal Transcripts</button>
 		<button class="btn btn-accent" onclick="logout()">Logout</button>
 	</div>
@@ -112,6 +130,20 @@ a:hover{color:var(--accent-hover)}
 	</div>
 	<div class="pagination" id="pagination"></div>
 </main>
+<div class="modal-overlay" id="statsModal" onclick="if(event.target===this)closeStats()">
+	<div class="modal">
+		<div class="modal-head">
+			<h2>Admin Stats — Tickets Closed</h2>
+			<button class="close-x" onclick="closeStats()">×</button>
+		</div>
+		<div class="modal-body">
+			<table class="stats-table">
+				<thead><tr><th>#</th><th>Admin</th><th class="right">Closed</th></tr></thead>
+				<tbody id="statsBody"><tr><td colspan="3" class="empty" style="padding:40px;text-align:center">Loading...</td></tr></tbody>
+			</table>
+		</div>
+	</div>
+</div>
 <script>
 let currentPage=1,currentSearch="";
 
@@ -207,6 +239,26 @@ async function logout(){
 }
 
 function openAppeals(){window.location.href="/appeals"}
+
+async function openStats(){
+	const modal=document.getElementById("statsModal");
+	const body=document.getElementById("statsBody");
+	body.innerHTML='<tr><td colspan="3" class="empty" style="padding:40px;text-align:center">Loading...</td></tr>';
+	modal.classList.add("open");
+	try{
+		const r=await fetch("/api/stats/closers");
+		if(!r.ok)throw 0;
+		const d=await r.json();
+		if(!d.closers.length){body.innerHTML='<tr><td colspan="3" class="empty" style="padding:40px;text-align:center">No closures yet</td></tr>';return}
+		body.innerHTML=d.closers.map((c,i)=>`<tr>
+			<td><span class="rank ${i<3?"top":""}">${i+1}</span></td>
+			<td>${esc(c.closedByName)||esc(c.closedBy)||"-"}</td>
+			<td class="right">${c.count}</td>
+		</tr>`).join("");
+	}catch{body.innerHTML='<tr><td colspan="3" class="empty" style="padding:40px;text-align:center;color:var(--accent)">Failed to load</td></tr>'}
+}
+function closeStats(){document.getElementById("statsModal").classList.remove("open")}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeStats()});
 
 document.getElementById("showAutoClosed").addEventListener("change",()=>loadTickets(1,currentSearch));
 
