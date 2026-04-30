@@ -108,7 +108,7 @@
 			"customDescription": "**NA3 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1458642423889662048", "1497064031259984033"],
+			"staffRoles": ["1360329397415972926", "1458642423889662048", "1497064031259984033","1499237354324492378"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -243,7 +243,7 @@
 			"customDescription": "**EU3 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1458642423889662048", "1497062741125627935"],
+			"staffRoles": ["1360329397415972926", "1458642423889662048", "1497062741125627935","1499237259109601363"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
