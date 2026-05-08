@@ -17,6 +17,7 @@ import GmAppCategoryOpenCommand from "./gmappcategoryopen";
 import CloseCategoryCommand from "./closecategory";
 import DevAppCategoryOpenCommand from "./devappcategoryopen";
 import SyncPermsCommand from "./syncperms";
+import BlanketAssignRoleCommand from "./blanketassignrole";
 
 export {
 	AddCommand,
@@ -38,4 +39,5 @@ export {
 	CloseCategoryCommand,
 	DevAppCategoryOpenCommand,
 	SyncPermsCommand,
+	BlanketAssignRoleCommand,
 };
