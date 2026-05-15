@@ -411,6 +411,78 @@
 					"maxLength": 4000
 				}
 			]
+		},
+		{
+			"codeName": "shop-support",
+			"name": "Shop Support",
+			"description": "Help with purchases made on our shop",
+			"emoji": "🛒",
+			"color": "#2ecc71",
+			"categoryId": "1504703923359842354",
+			"ticketNameOption": "shop-TICKETCOUNT-USERNAME",
+			"customDescription": "**Shop Support Ticket**\nOpened by <@USERID>\n\n**Name:** REASON1\n**Item Purchased:** REASON2\n**Date Purchased:** REASON3\n**Description:** REASON4",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
+			"questions": [
+				{
+					"label": "Name",
+					"placeholder": "Your name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Item Purchased",
+					"placeholder": "Which item you purchased",
+					"style": "SHORT",
+					"maxLength": 200
+				},
+				{
+					"label": "Date Purchased",
+					"placeholder": "e.g. 2026-04-11",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Describe your issue",
+					"placeholder": "Explain the problem with your purchase",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				}
+			]
+		},
+		{
+			"codeName": "contact-management",
+			"name": "Contact Management",
+			"description": "Contact server management",
+			"emoji": "📨",
+			"color": "#9b59b6",
+			"categoryId": "1504704116868251719",
+			"ticketNameOption": "mgmt-TICKETCOUNT-USERNAME",
+			"customDescription": "**Contact Management**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**GUID:** REASON2\n**Description:** REASON3",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": ["1360329397415972926", "1458642423889662048"],
+			"questions": [
+				{
+					"label": "In-Game Name",
+					"placeholder": "Your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "GUID",
+					"placeholder": "Your Arma Reforger UID / GUID",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Describe your issue",
+					"placeholder": "Explain what you need to discuss with management",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				}
+			]
 		}
 	],
 	"ticketNameOption": "ticket-TICKETCOUNT-USERNAME",

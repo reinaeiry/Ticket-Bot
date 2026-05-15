@@ -219,7 +219,7 @@ export const createTicket = async (
 				msg.pin().then(() => {
 					msg.channel.bulkDelete(1).then(() => {
 						// Start evidence monitor AFTER pin cleanup so the embed doesn't get deleted
-						const skipEvidence = ["ban-appeal", "gm-application", "dev-application"];
+						const skipEvidence = ["ban-appeal", "gm-application", "dev-application", "shop-support", "contact-management"];
 						if (!skipEvidence.includes(ticketType.codeName)) {
 							startEvidenceMonitor(channel as TextChannel, client, interaction.user.id);
 						}

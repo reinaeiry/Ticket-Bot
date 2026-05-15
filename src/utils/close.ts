@@ -115,7 +115,9 @@ export async function close(
 	const isRestricted =
 		ticketType?.codeName === "ban-appeal" ||
 		ticketType?.codeName === "dev-application" ||
-		ticketType?.codeName === "gm-application";
+		ticketType?.codeName === "gm-application" ||
+		ticketType?.codeName === "shop-support" ||
+		ticketType?.codeName === "contact-management";
 
 	if (client.config.closeOption.createTranscript) {
 		try {
