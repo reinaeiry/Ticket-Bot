@@ -2,4 +2,7 @@ node_modules
 dist
 .env
 *.db
-transcript-server/
+transcript-server/node_modules/
+transcript-server/data/
+transcript-server/*.db
+transcript-server/*.db-*
