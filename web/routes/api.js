@@ -1,7 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
-const { requireAuth, requireApiKey, requireAppealAuth, hasAppealAuth } = require("../middleware/auth");
+const { requireAuth, requireApiKey, requireAppealAuth, hasAppealAuth, requireDeletePerm } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -94,8 +94,8 @@ function buildListQuery({ search, includeAutoClosed, restrictedFilter }) {
 
 	if (search && search.trim()) {
 		const s = `%${search.trim()}%`;
-		clauses.push(`(channel_name LIKE ? OR created_by_name LIKE ? OR close_reason LIKE ? OR category LIKE ? OR CAST(ticket_id AS TEXT) LIKE ?)`);
-		params.push(s, s, s, s, s);
+		clauses.push(`(channel_name LIKE ? OR created_by_name LIKE ? OR closed_by_name LIKE ? OR close_reason LIKE ? OR category LIKE ? OR created_by LIKE ? OR closed_by LIKE ? OR id LIKE ? OR CAST(ticket_id AS TEXT) LIKE ? OR messages LIKE ?)`);
+		params.push(s, s, s, s, s, s, s, s, s, s);
 	}
 
 	const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
@@ -172,22 +172,8 @@ router.get("/appeal-tickets", requireAppealAuth, (req, res) => {
 	});
 });
 
-// GET /api/stats/closers - Leaderboard of human admin closers (excludes auto-closed and restricted)
-router.get("/stats/closers", requireAuth, (req, res) => {
-	const rows = db.prepare(`
-		SELECT closed_by AS closedBy, closed_by_name AS closedByName, COUNT(*) AS count
-		FROM transcripts
-		WHERE (auto_closed = 0 OR auto_closed IS NULL)
-		  AND (restricted = 0 OR restricted IS NULL)
-		  AND closed_by IS NOT NULL
-		GROUP BY closed_by, closed_by_name
-		ORDER BY count DESC, closed_by_name ASC
-	`).all();
-	res.json({ closers: rows });
-});
-
 // DELETE /api/transcript/:id - Admin delete a transcript
-router.delete("/transcript/:id", requireAuth, (req, res) => {
+router.delete("/transcript/:id", requireAuth, requireDeletePerm, (req, res) => {
 	const row = db.prepare("SELECT restricted FROM transcripts WHERE id = ?").get(req.params.id);
 	if (!row) return res.status(404).json({ error: "Not found" });
 	if (row.restricted && !hasAppealAuth(req)) {

@@ -1,6 +1,5 @@
 const Database = require("better-sqlite3");
 const path = require("path");
-const bcrypt = require("bcryptjs");
 
 const db = new Database(path.join(__dirname, "transcripts.db"));
 
@@ -44,12 +43,8 @@ const hasCol = (n) => cols.some((c) => c.name === n);
 if (!hasCol("auto_closed")) db.exec(`ALTER TABLE transcripts ADD COLUMN auto_closed INTEGER DEFAULT 0`);
 if (!hasCol("restricted")) db.exec(`ALTER TABLE transcripts ADD COLUMN restricted INTEGER DEFAULT 0`);
 
-// Seed default admin if none exist
-const adminCount = db.prepare("SELECT COUNT(*) as count FROM admins").get();
-if (adminCount.count === 0) {
-	const hash = bcrypt.hashSync("EirySaysHi!", 10);
-	db.prepare("INSERT INTO admins (username, password) VALUES (?, ?)").run("Admin", hash);
-	console.log("Default admin created.");
-}
+// The `admins` table is no longer used — login moved to auth.reforgedz.net.
+// Table is left in place to avoid a destructive migration on first deploy; drop in a
+// follow-up cleanup once we're confident no other tooling reads it.
 
 module.exports = db;

@@ -1,44 +1,44 @@
-const jwt = require("jsonwebtoken");
+const makeRzAuth = require("../lib/rz-auth");
 
-const JWT_SECRET = process.env.JWT_SECRET || "change-me";
-const APPEAL_JWT_SECRET = process.env.APPEAL_JWT_SECRET || JWT_SECRET + ":appeal";
+const AUTH_BASE = process.env.AUTH_BASE || "https://auth.reforgedz.net";
+const COOKIE_NAME = process.env.COOKIE_NAME || "rz_session";
+
+const rzAuth = makeRzAuth({
+	publicKeyPem: process.env.AUTH_PUBLIC_KEY_PEM || undefined,
+	publicKeyPath: process.env.AUTH_PUBLIC_KEY_PATH || undefined,
+	publicKeyUrl: process.env.AUTH_PUBLIC_KEY_PEM
+		? undefined
+		: (process.env.AUTH_PUBLIC_KEY_URL || `${AUTH_BASE.replace(/\/+$/, "")}/api/auth/public-key`),
+	authBase: AUTH_BASE,
+	loginUrl: `${AUTH_BASE.replace(/\/+$/, "")}/login`,
+	cookieName: COOKIE_NAME
+});
+
+async function readyPromise() { await rzAuth.ready(); }
 
 function requireAuth(req, res, next) {
-	const token = req.cookies?.token || req.headers.authorization?.replace("Bearer ", "");
-	if (!token) return res.status(401).json({ error: "Not authenticated" });
-
-	try {
-		const decoded = jwt.verify(token, JWT_SECRET);
-		req.admin = decoded;
-		next();
-	} catch {
-		return res.status(401).json({ error: "Invalid or expired token" });
-	}
+	if (!req.rzUser) return res.status(401).json({ error: "Not authenticated" });
+	if (!req.rzUser.perms?.transcripts?.read) return res.status(403).json({ error: "Forbidden" });
+	req.admin = { username: req.rzUser.username };
+	next();
 }
 
 function requireAppealAuth(req, res, next) {
-	requireAuth(req, res, (err) => {
-		if (err) return;
-		const appealToken = req.cookies?.appealToken;
-		if (!appealToken) return res.status(401).json({ error: "Appeal authentication required" });
-		try {
-			jwt.verify(appealToken, APPEAL_JWT_SECRET);
-			next();
-		} catch {
-			return res.status(401).json({ error: "Appeal session expired" });
-		}
-	});
+	if (!req.rzUser) return res.status(401).json({ error: "Not authenticated" });
+	if (!req.rzUser.perms?.transcripts?.read) return res.status(403).json({ error: "Forbidden" });
+	if (!req.rzUser.perms?.transcripts?.appeals) return res.status(401).json({ error: "Appeal authentication required" });
+	req.admin = { username: req.rzUser.username };
+	next();
 }
 
 function hasAppealAuth(req) {
-	const appealToken = req.cookies?.appealToken;
-	if (!appealToken) return false;
-	try {
-		jwt.verify(appealToken, APPEAL_JWT_SECRET);
-		return true;
-	} catch {
-		return false;
-	}
+	return !!(req.rzUser && req.rzUser.perms?.transcripts?.appeals);
+}
+
+function requireDeletePerm(req, res, next) {
+	if (!req.rzUser) return res.status(401).json({ error: "Not authenticated" });
+	if (!req.rzUser.perms?.transcripts?.delete) return res.status(403).json({ error: "Forbidden" });
+	next();
 }
 
 function requireApiKey(req, res, next) {
@@ -49,4 +49,12 @@ function requireApiKey(req, res, next) {
 	next();
 }
 
-module.exports = { requireAuth, requireAppealAuth, hasAppealAuth, requireApiKey, APPEAL_JWT_SECRET };
+module.exports = {
+	attachSession: rzAuth.attachSession,
+	readyPromise,
+	requireAuth,
+	requireAppealAuth,
+	hasAppealAuth,
+	requireDeletePerm,
+	requireApiKey
+};

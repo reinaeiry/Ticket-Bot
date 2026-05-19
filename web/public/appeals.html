@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ReforgedZ Transcripts - Applications / Ban Appeals</title>
+<title>ReforgedZ Transcripts - Ban Appeals / Applications</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -71,7 +71,7 @@ a:hover{color:var(--accent-hover)}
 </head>
 <body>
 <header>
-	<h1><span>Reforged</span>Z Transcripts <span style="color:var(--text-ghost);font-size:.8rem;margin-left:8px">/ Applications &amp; Ban Appeals</span></h1>
+	<h1><span>Reforged</span>Z Transcripts <span style="color:var(--text-ghost);font-size:.8rem;margin-left:8px">/ Ban Appeals</span></h1>
 	<div class="header-right">
 		<span id="adminName"></span>
 		<button class="btn" onclick="backToAdmin()">Back to Admin</button>
@@ -83,7 +83,7 @@ a:hover{color:var(--accent-hover)}
 <main>
 	<div id="gate" class="gate">
 		<h2>Restricted Area</h2>
-		<div class="sub">Enter the Application / Ban Appeal transcript password to continue.</div>
+		<div class="sub">Enter the Ban Appeal / Application transcript password to continue.</div>
 		<div class="err" id="gateErr"></div>
 		<form id="gateForm">
 			<label for="gatePw">Password</label>
@@ -96,7 +96,7 @@ a:hover{color:var(--accent-hover)}
 	</div>
 
 	<div id="panel" class="hidden">
-		<div class="warning-banner">These transcripts contain sensitive application / ban appeal content. Do not share externally.</div>
+		<div class="warning-banner">These transcripts contain sensitive ban appeal / application content. Do not share externally.</div>
 		<div class="search-bar">
 			<input type="text" id="searchInput" placeholder="Search by ticket #, player name, category, or content...">
 			<button class="btn btn-accent" onclick="search()">Search</button>
@@ -138,13 +138,14 @@ function truncate(s,n){if(!s)return"-";return s.length>n?s.substring(0,n)+"...":
 function backToAdmin(){window.location.href="/admin"}
 
 async function logout(){
-	await fetch("/api/auth/logout",{method:"POST"});
+	await fetch("https://auth.reforgedz.net/api/auth/logout",{method:"POST",credentials:"include"});
 	window.location.href="/login";
 }
 
 async function lockAppeals(){
-	await fetch("/api/auth/appeal-lock",{method:"POST"});
-	showGate();
+	// Appeal access is a permission on the SSO account now, not a per-session unlock.
+	// "Lock" no longer applies; route back to the regular admin panel instead.
+	window.location.href="/admin";
 }
 
 async function checkAuth(){
@@ -153,23 +154,22 @@ async function checkAuth(){
 		if(!r.ok)throw 0;
 		const d=await r.json();
 		document.getElementById("adminName").textContent=d.username;
+		if(d.hasAppealAccess){showPanel()}else{showGate(true)}
 	}catch{window.location.href="/login"}
 }
 
-async function checkAppealStatus(){
-	try{
-		const r=await fetch("/api/auth/appeal-status");
-		const d=await r.json();
-		if(d.unlocked){showPanel()}else{showGate()}
-	}catch{showGate()}
-}
+async function checkAppealStatus(){ /* superseded by checkAuth */ }
 
-function showGate(){
+function showGate(noPermission){
 	document.getElementById("gate").classList.remove("hidden");
 	document.getElementById("panel").classList.add("hidden");
 	document.getElementById("lockBtn").style.display="none";
-	const pw=document.getElementById("gatePw");
-	pw.value="";pw.focus();
+	if(noPermission){
+		const f=document.getElementById("gateForm");
+		if(f){
+			f.innerHTML='<p style="text-align:center;color:var(--text-dim);max-width:380px;line-height:1.6">Your account does not have ban-appeal transcript access.<br>Ask a manager at <a href="https://auth.reforgedz.net" target="_blank" style="color:var(--accent)">auth.reforgedz.net</a> to grant the <strong>transcripts.appeals</strong> permission.</p>';
+		}
+	}
 }
 
 function showPanel(){
@@ -179,17 +179,8 @@ function showPanel(){
 	loadTickets(1,"");
 }
 
-document.getElementById("gateForm").addEventListener("submit",async(e)=>{
-	e.preventDefault();
-	const err=document.getElementById("gateErr");
-	err.style.display="none";
-	try{
-		const r=await fetch("/api/auth/appeal-unlock",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:document.getElementById("gatePw").value})});
-		const d=await r.json();
-		if(d.success){showPanel()}
-		else{err.textContent=d.error||"Invalid password";err.style.display="block"}
-	}catch{err.textContent="Connection error";err.style.display="block"}
-});
+const _gateForm=document.getElementById("gateForm");
+if(_gateForm){_gateForm.addEventListener("submit",(e)=>e.preventDefault())}
 
 async function loadTickets(page=1,search=""){
 	currentPage=page;currentSearch=search;
