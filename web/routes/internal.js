@@ -26,22 +26,27 @@ router.use(authorize);
 
 // Discord ↔ GUID linkage, derived from the transcripts table (most recent ticket).
 // We pick the most recent row matching either side to keep usernames fresh.
+// Tries the structured `guid` column first, then falls back to LIKE matching
+// the GUID inside the `messages` JSON (historical tickets that captured the
+// GUID as an "Arma Reforger UID" Q&A answer never populated the column).
 router.get("/linkages/by-guid/:guid", (req, res) => {
 	const guid = String(req.params.guid || "").trim().toLowerCase();
 	if (!guid) return res.status(400).json({ error: "missing_guid" });
+	const like = `%${guid}%`;
 	const row = db.prepare(`
 		SELECT created_by AS discordId, created_by_name AS discordUsername,
 		       guid, closed_at AS lastSeenAt
 		FROM transcripts
-		WHERE guid = ? AND created_by IS NOT NULL
+		WHERE created_by IS NOT NULL
+		  AND (LOWER(guid) = ? OR LOWER(messages) LIKE ?)
 		ORDER BY closed_at DESC
 		LIMIT 1
-	`).get(guid);
+	`).get(guid, like);
 	if (!row) return res.status(404).json({ error: "not_found" });
 	res.json({
 		discordId: row.discordId,
 		discordUsername: row.discordUsername,
-		guid: row.guid,
+		guid: row.guid || guid,
 		lastSeenAt: row.lastSeenAt
 	});
 });
