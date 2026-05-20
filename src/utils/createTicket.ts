@@ -13,6 +13,10 @@ import {
 import { ExtendedClient, TicketType } from "../structure";
 import { log } from "./logs";
 import { startEvidenceMonitor } from "./evidenceMonitor";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ticketBus = require("../../web/lib/ticketBus");
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { permKeyForCode, isSupportedCode } = require("../../web/lib/ticketCategories");
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -215,7 +219,19 @@ export const createTicket = async (
 							messageid: msg.id
 						}
 					})
-					.then(); // Again why tf do I need .then()?!?!?
+					.then(() => {
+					// Push the new ticket onto the admin relay so the sidebar
+					// updates without polling. messageCreate fires too early
+					// (the row doesn't exist yet) so we publish here, right
+					// after the row is committed.
+					if (isSupportedCode(ticketType.codeName)) {
+						ticketBus.publish({
+							type: "ticket.create",
+							channelId: channel.id,
+							permKey: permKeyForCode(ticketType.codeName)
+						});
+					}
+				});
 				msg.pin().then(() => {
 					msg.channel.bulkDelete(1).then(() => {
 						// Start evidence monitor AFTER pin cleanup so the embed doesn't get deleted
