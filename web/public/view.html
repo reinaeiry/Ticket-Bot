@@ -39,6 +39,7 @@ header h1 .hash{color:var(--accent);font-size:1.2rem}
 .embed{margin-top:4px;max-width:520px;border-radius:4px;overflow:hidden;display:flex;border:1px solid var(--border)}
 .embed-pill{width:3px;flex-shrink:0;background:var(--accent)}
 .embed-content{padding:8px 16px 8px 12px;background:var(--surface);flex:1}
+.embed-author{font-weight:600;font-size:.78rem;color:var(--text-dim);margin-bottom:4px;text-transform:none}
 .embed-title{font-weight:600;font-size:.85rem;margin-bottom:4px;color:var(--text)}
 .embed-desc{font-size:.82rem;color:var(--text-dim);white-space:pre-wrap}
 .attachment{margin-top:4px}
@@ -108,8 +109,13 @@ function renderMsg(msg,prev){
 		for(const e of msg.embeds){
 			const col=e.color?`#${e.color.toString(16).padStart(6,"0")}`:"var(--accent)";
 			h+=`<div class="embed"><div class="embed-pill" style="background:${col}"></div><div class="embed-content">`;
+			if(e.author?.name)h+=`<div class="embed-author">${esc(e.author.name)}</div>`;
 			if(e.title)h+=`<div class="embed-title">${esc(e.title)}</div>`;
-			if(e.description)h+=`<div class="embed-desc">${esc(e.description)}</div>`;
+			if(e.description){
+				let d=esc(e.description);
+				d=d.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+				h+=`<div class="embed-desc">${d}</div>`;
+			}
 			h+=`</div></div>`;
 		}
 	}

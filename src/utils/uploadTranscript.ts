@@ -17,14 +17,23 @@ export type TranscriptUploadInput = {
 };
 
 async function fetchAllMessages(channel: TextChannel): Promise<Collection<string, Message>> {
+	// Discord's messages.fetch({ before: id }) is EXCLUSIVE of `id`, so
+	// passing channel.lastMessageId as the cursor would silently drop the
+	// most recent message (e.g. an admin-relay reply that came in right
+	// before close). Always start with an un-anchored fetch so the very
+	// last message is included, then page backwards from the oldest of
+	// that batch.
 	const collArray: Collection<string, Message>[] = [];
-	let lastID = channel.lastMessageId ?? undefined;
-	while (lastID) {
-		const fetched = await channel.messages.fetch({ limit: 100, before: lastID }).catch(() => null);
+	let cursor: string | undefined = undefined;
+	while (true) {
+		const opts: { limit: number; before?: string } = { limit: 100 };
+		if (cursor) opts.before = cursor;
+		const fetched = await channel.messages.fetch(opts).catch(() => null);
 		if (!fetched || fetched.size === 0) break;
 		collArray.push(fetched);
-		lastID = fetched.last()?.id;
-		if (fetched.size !== 100) break;
+		if (fetched.size < 100) break;
+		cursor = fetched.last()?.id;
+		if (!cursor) break;
 	}
 	if (collArray.length === 0) return new Collection<string, Message>();
 	return collArray[0].concat(...collArray.slice(1));
@@ -50,6 +59,7 @@ export async function uploadTranscript(input: TranscriptUploadInput): Promise<st
 			footer: e.footer,
 			thumbnail: e.thumbnail,
 			image: e.image,
+			author: e.author ? { name: e.author.name, iconURL: e.author.iconURL } : undefined,
 		})),
 		attachments: msg.attachments.map((a) => ({
 			name: a.name,
