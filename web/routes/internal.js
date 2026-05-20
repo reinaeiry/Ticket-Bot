@@ -115,7 +115,20 @@ router.get("/transcripts/by-guid/:guid", (req, res) => {
 	const guid = String(req.params.guid || "").trim().toLowerCase();
 	if (!guid) return res.status(400).json({ error: "missing_guid" });
 	const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
-	res.json({ transcripts: listForFilter("guid = ?", [guid], limit) });
+	// Match either:
+	//   1. structured guid column (set by the bot at upload time)
+	//   2. the GUID appearing anywhere in the messages content (covers
+	//      tickets that captured it as an "Arma Reforger UID" Q&A answer)
+	// Both forms supported so historical transcripts that didn't populate
+	// the guid column still surface.
+	const like = `%${guid}%`;
+	res.json({
+		transcripts: listForFilter(
+			"(LOWER(guid) = ? OR LOWER(messages) LIKE ?)",
+			[guid, like],
+			limit
+		)
+	});
 });
 
 router.get("/transcripts/by-discord-id/:id", (req, res) => {
