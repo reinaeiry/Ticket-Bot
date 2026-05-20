@@ -42,6 +42,9 @@ const cols = db.prepare(`PRAGMA table_info(transcripts)`).all();
 const hasCol = (n) => cols.some((c) => c.name === n);
 if (!hasCol("auto_closed")) db.exec(`ALTER TABLE transcripts ADD COLUMN auto_closed INTEGER DEFAULT 0`);
 if (!hasCol("restricted")) db.exec(`ALTER TABLE transcripts ADD COLUMN restricted INTEGER DEFAULT 0`);
+if (!hasCol("guid")) db.exec(`ALTER TABLE transcripts ADD COLUMN guid TEXT`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_transcripts_guid ON transcripts(guid)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_transcripts_created_by ON transcripts(created_by)`);
 
 // The `admins` table is no longer used — login moved to auth.reforgedz.net.
 // Table is left in place to avoid a destructive migration on first deploy; drop in a

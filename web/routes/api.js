@@ -20,14 +20,15 @@ router.post("/upload", requireApiKey, (req, res) => {
 			messages,
 			autoClosed,
 			restricted,
+			guid,
 		} = req.body;
 
 		const id = crypto.randomUUID();
 		const messageCount = Array.isArray(messages) ? messages.length : 0;
 
 		db.prepare(`
-			INSERT INTO transcripts (id, ticket_id, channel_name, category, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages, auto_closed, restricted)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			INSERT INTO transcripts (id, ticket_id, channel_name, category, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages, auto_closed, restricted, guid)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			id,
 			ticketId || null,
@@ -43,6 +44,7 @@ router.post("/upload", requireApiKey, (req, res) => {
 			JSON.stringify(messages || []),
 			autoClosed ? 1 : 0,
 			restricted ? 1 : 0,
+			(typeof guid === "string" && guid.trim()) ? guid.trim().toLowerCase() : null,
 		);
 
 		res.json({ id });

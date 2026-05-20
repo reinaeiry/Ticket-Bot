@@ -17,6 +17,7 @@ async function startWebServer() {
 
 	app.use("/api", require("./routes/api"));
 	app.use("/api/auth", require("./routes/auth"));
+	app.use("/api/internal", require("./routes/internal"));
 
 	app.get("/t/:id", (req, res) => {
 		res.sendFile(path.join(__dirname, "public", "view.html"));
