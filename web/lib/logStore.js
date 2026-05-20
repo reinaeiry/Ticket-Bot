@@ -251,6 +251,44 @@ function listLogs({ guid, name, types, servers, scopes, scopePairs, q, since, un
 	return out;
 }
 
+// Roll-up stats for a single player. Counts kills, deaths (both environment
+// deaths and being a kill target), then computes K/D and the mean
+// inter-death interval as "avg time alive" — capped at 4 hours so massive
+// offline gaps between sessions don't dominate the mean.
+const stmtKillCount = db.prepare("SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'kill' AND player_guid = ?");
+const stmtDeathStandalone = db.prepare("SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'death' AND player_guid = ?");
+const stmtDeathAsTarget = db.prepare("SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'kill' AND target_guid = ?");
+const stmtAllDeathTs = db.prepare(`
+	SELECT ts_ms FROM game_logs
+	WHERE (log_type = 'death' AND player_guid = ?)
+	   OR (log_type = 'kill' AND target_guid = ?)
+	ORDER BY ts_ms ASC
+`);
+
+const MAX_GAP_MS = 4 * 60 * 60 * 1000; // 4 hours
+
+function playerStats(guid) {
+	if (!guid) return null;
+	const g = String(guid).toLowerCase();
+	const kills = stmtKillCount.get(g).n;
+	const deaths = stmtDeathStandalone.get(g).n + stmtDeathAsTarget.get(g).n;
+	const ts = stmtAllDeathTs.all(g, g).map((r) => r.ts_ms);
+	let gapSum = 0, gapN = 0;
+	for (let i = 1; i < ts.length; i++) {
+		const d = ts[i] - ts[i - 1];
+		if (d > 0 && d <= MAX_GAP_MS) { gapSum += d; gapN++; }
+	}
+	return {
+		kills,
+		deaths,
+		kdr: deaths === 0 ? (kills > 0 ? kills : 0) : (kills / deaths),
+		avgAliveSec: gapN > 0 ? Math.round(gapSum / gapN / 1000) : null,
+		samples: gapN,
+		firstSeenMs: ts[0] || null,
+		lastSeenMs: ts[ts.length - 1] || null
+	};
+}
+
 function getLastScrapedMessageId(channelId) {
 	const row = db.prepare("SELECT message_id FROM game_logs WHERE channel_id = ? ORDER BY ts_ms DESC LIMIT 1").get(channelId);
 	return row ? row.message_id : null;
@@ -266,6 +304,7 @@ module.exports = {
 	rememberLink,
 	knownNamesForGuid,
 	listLogs,
+	playerStats,
 	getLastScrapedMessageId,
 	getOldestScrapedMs
 };

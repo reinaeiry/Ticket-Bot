@@ -205,6 +205,12 @@ router.get("/logs", (req, res) => {
 	}
 });
 
+router.get("/logs/stats/:guid", (req, res) => {
+	const guid = String(req.params.guid || "").trim().toLowerCase();
+	if (!guid) return res.status(400).json({ error: "missing_guid" });
+	res.json(logStore.playerStats(guid));
+});
+
 router.get("/logs/names-for-guid/:guid", (req, res) => {
 	const guid = String(req.params.guid || "").trim().toLowerCase();
 	if (!guid) return res.status(400).json({ error: "missing_guid" });
