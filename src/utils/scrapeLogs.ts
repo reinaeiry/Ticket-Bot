@@ -22,7 +22,7 @@ async function ingestMessage(message: Message, mapping: ChannelMapping): Promise
 	try {
 		const rows = parseMessage(message, mapping);
 		if (!rows.length) return 0;
-		return logStore.ingestParsed(message.channelId, message.id, rows);
+		return logStore.ingestParsed(message.channelId, message.id, rows, mapping);
 	} catch (err) {
 		console.error(`[scrapeLogs] parse failed for msg ${message.id}:`, err);
 		return 0;

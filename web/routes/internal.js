@@ -160,11 +160,21 @@ router.get("/logs", (req, res) => {
 	try {
 		const types = req.query.types ? String(req.query.types).split(",").map((s) => s.trim()).filter(Boolean) : null;
 		const servers = req.query.servers ? String(req.query.servers).split(",").map((s) => s.trim()).filter(Boolean) : null;
+		const scopes = req.query.scopes ? String(req.query.scopes).split(",").map((s) => s.trim()).filter(Boolean) : null;
+		// scopePairs format: "NA1:kill,NA1:chat,EU1:kill"
+		const scopePairs = req.query.scopePairs
+			? String(req.query.scopePairs).split(",").map((p) => {
+				const [s, t] = p.split(":");
+				return s && t ? { scope: s.trim(), type: t.trim() } : null;
+			}).filter(Boolean)
+			: null;
 		const rows = logStore.listLogs({
 			guid: req.query.guid ? String(req.query.guid).trim().toLowerCase() : null,
 			name: req.query.name ? String(req.query.name).trim() : null,
 			types,
 			servers,
+			scopes,
+			scopePairs,
 			q: req.query.q ? String(req.query.q).trim() : null,
 			since: req.query.sinceMs ? +req.query.sinceMs : null,
 			until: req.query.untilMs ? +req.query.untilMs : null,

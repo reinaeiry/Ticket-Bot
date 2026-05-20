@@ -12,6 +12,7 @@ db.exec(`
 		log_index INTEGER NOT NULL,
 		ts_ms INTEGER NOT NULL,
 		log_type TEXT NOT NULL,
+		scope TEXT,
 		server TEXT,
 		severity TEXT,
 		category TEXT,
@@ -30,6 +31,7 @@ db.exec(`
 	CREATE INDEX IF NOT EXISTS idx_logs_target_name ON game_logs(target_name COLLATE NOCASE);
 	CREATE INDEX IF NOT EXISTS idx_logs_type ON game_logs(log_type);
 	CREATE INDEX IF NOT EXISTS idx_logs_server ON game_logs(server);
+	CREATE INDEX IF NOT EXISTS idx_logs_scope ON game_logs(scope);
 
 	CREATE TABLE IF NOT EXISTS name_to_guid (
 		name TEXT NOT NULL,
@@ -41,12 +43,21 @@ db.exec(`
 	CREATE INDEX IF NOT EXISTS idx_n2g_guid ON name_to_guid(guid);
 `);
 
+// Back-compat: add `scope` to existing tables if it's missing.
+{
+	const cols = db.prepare("PRAGMA table_info(game_logs)").all();
+	if (!cols.some((c) => c.name === "scope")) {
+		db.exec("ALTER TABLE game_logs ADD COLUMN scope TEXT");
+		db.exec("CREATE INDEX IF NOT EXISTS idx_logs_scope ON game_logs(scope)");
+	}
+}
+
 const insertLogStmt = db.prepare(`
 	INSERT OR IGNORE INTO game_logs
-		(channel_id, message_id, log_index, ts_ms, log_type, server, severity,
+		(channel_id, message_id, log_index, ts_ms, log_type, scope, server, severity,
 		 category, player_name, player_guid, target_name, target_guid, details, raw)
 	VALUES
-		(@channel_id, @message_id, @log_index, @ts_ms, @log_type, @server, @severity,
+		(@channel_id, @message_id, @log_index, @ts_ms, @log_type, @scope, @server, @severity,
 		 @category, @player_name, @player_guid, @target_name, @target_guid, @details, @raw)
 `);
 
@@ -70,7 +81,18 @@ const lookupNamesStmt = db.prepare(`
 // Insert a batch of parsed rows in a single transaction. Pre-resolves
 // player_guid via the name_to_guid table when the parser didn't supply one,
 // and feeds the table with any (name, guid) pairs the parser DID supply.
-function ingestParsed(channelId, messageId, rows) {
+// Derive the perm/filter scope for a row from its channel mapping.
+//   Per-server channels (NA1/NA2/EU1/EU2 kill+chat) -> server tag
+//   Region channels (NA/EU anticheat+shop)         -> region tag
+//   Global base channel                            -> "ALL"
+function scopeFor(mapping) {
+	if (!mapping) return null;
+	if (mapping.server) return mapping.server;            // NA1 / NA2 / EU1 / EU2
+	if (mapping.region === "ALL") return "ALL";
+	return mapping.region || null;                         // NA / EU
+}
+
+function ingestParsed(channelId, messageId, rows, mapping) {
 	if (!rows || !rows.length) return 0;
 	let inserted = 0;
 	const tx = db.transaction(() => {
@@ -84,6 +106,7 @@ function ingestParsed(channelId, messageId, rows) {
 			}
 		}
 		// Second pass: backfill missing guids from the table, then insert.
+		const scope = scopeFor(mapping);
 		rows.forEach((r, idx) => {
 			if (!r.player_guid && r.player_name) {
 				const hit = lookupGuidStmt.get(r.player_name);
@@ -99,6 +122,7 @@ function ingestParsed(channelId, messageId, rows) {
 				log_index: idx,
 				ts_ms: r.ts_ms,
 				log_type: r.log_type,
+				scope: scope,
 				server: r.server || null,
 				severity: r.severity || null,
 				category: r.category || null,
@@ -136,11 +160,14 @@ function knownNamesForGuid(guid) {
 const HOT_CACHE_TTL_MS = 10_000;
 const hotCache = new Map();
 function hotKey(opts) {
+	const pairs = (opts.scopePairs || []).map((p) => p.scope + ":" + p.type).join(",");
 	return [
 		opts.guid || "",
 		opts.name || "",
 		(opts.types || []).join(","),
 		(opts.servers || []).join(","),
+		(opts.scopes || []).join(","),
+		pairs,
 		opts.q || "",
 		opts.since || "",
 		opts.until || "",
@@ -151,8 +178,8 @@ function hotKey(opts) {
 // Live ingest invalidates the cache - small set so this stays cheap.
 function clearHotCache() { hotCache.clear(); }
 
-function listLogs({ guid, name, types, servers, q, since, until, limit = 100, offset = 0 } = {}) {
-	const opts = { guid, name, types, servers, q, since, until, limit, offset };
+function listLogs({ guid, name, types, servers, scopes, scopePairs, q, since, until, limit = 100, offset = 0 } = {}) {
+	const opts = { guid, name, types, servers, scopes, scopePairs, q, since, until, limit, offset };
 	const k = hotKey(opts);
 	const hit = hotCache.get(k);
 	if (hit && hit.expiresAt > Date.now()) return hit.value;
@@ -183,6 +210,17 @@ function listLogs({ guid, name, types, servers, q, since, until, limit = 100, of
 		where.push("server IN (" + servers.map(() => "?").join(",") + ")");
 		params.push(...servers);
 	}
+	if (scopes && scopes.length) {
+		where.push("scope IN (" + scopes.map(() => "?").join(",") + ")");
+		params.push(...scopes);
+	}
+	// scopePairs: list of {scope, type} the user is allowed to see. Each
+	// row must match at least one pair. This is the per-server perm gate.
+	if (scopePairs && scopePairs.length) {
+		const parts = scopePairs.map(() => "(scope = ? AND log_type = ?)");
+		where.push("(" + parts.join(" OR ") + ")");
+		for (const p of scopePairs) params.push(p.scope, p.type);
+	}
 	if (since) { where.push("ts_ms >= ?"); params.push(+since); }
 	if (until) { where.push("ts_ms <= ?"); params.push(+until); }
 	if (q) {
@@ -192,7 +230,7 @@ function listLogs({ guid, name, types, servers, q, since, until, limit = 100, of
 	}
 
 	const sql = `
-		SELECT id, channel_id, message_id, ts_ms, log_type, server, severity, category,
+		SELECT id, channel_id, message_id, ts_ms, log_type, scope, server, severity, category,
 		       player_name, player_guid, target_name, target_guid, details, raw
 		FROM game_logs
 		${where.length ? "WHERE " + where.join(" AND ") : ""}
