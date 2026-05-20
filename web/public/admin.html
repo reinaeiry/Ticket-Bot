@@ -69,6 +69,23 @@ a:hover{color:var(--accent-hover)}
 .toggle input:checked::before{background:var(--accent);left:17px}
 .muted-row td{opacity:.55}
 .hidden{display:none !important}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px;z-index:100}
+.modal-card{background:var(--bg-dark);border:1px solid var(--border);border-radius:8px;max-width:680px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.6)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border)}
+.modal-header h2{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:1.05rem;font-weight:600}
+.modal-toolbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--text-dim);gap:12px;flex-wrap:wrap}
+.modal-toolbar label{display:flex;align-items:center;gap:8px}
+.modal-toolbar select{background:var(--bg-black);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font:inherit}
+.stats-total{font-family:'Oswald',sans-serif;color:var(--accent);letter-spacing:1px;text-transform:uppercase;font-size:.78rem}
+#statsBody{overflow-y:auto;padding:8px 0}
+.staff-row{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;padding:10px 24px;border-bottom:1px solid var(--border)}
+.staff-row:last-child{border-bottom:none}
+.staff-row .name{color:var(--text);font-weight:500}
+.staff-row .count{color:var(--accent);font-family:'Oswald',sans-serif;font-size:1.1rem;font-weight:600;letter-spacing:1px;min-width:50px;text-align:right}
+.staff-row .bar{width:160px;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
+.staff-row .bar>div{height:100%;background:var(--accent);transition:width .3s}
+.staff-row .last{color:var(--text-ghost);font-size:.75rem;margin-left:4px}
+.loading{padding:32px;text-align:center;color:var(--text-dim)}
 .auto-badge{display:inline-block;padding:2px 8px;border-radius:3px;background:rgba(241,196,15,.12);color:#f1c40f;border:1px solid rgba(241,196,15,.25);font-size:.7rem;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px}
 .no-link{color:var(--text-ghost);font-size:.78rem;font-style:italic}
 </style>
@@ -78,10 +95,32 @@ a:hover{color:var(--accent-hover)}
 	<h1><span>Reforged</span>Z Transcripts</h1>
 	<div class="header-right">
 		<span id="adminName"></span>
+		<button class="btn hidden" id="statsBtn" onclick="openStats()">Staff Stats</button>
 		<button class="btn" onclick="changePassword()">Change Password</button>
 		<button class="btn btn-accent" onclick="logout()">Logout</button>
 	</div>
 </header>
+<div id="statsModal" class="modal hidden" onclick="if(event.target===this)closeStats()">
+	<div class="modal-card">
+		<div class="modal-header">
+			<h2>Tickets Closed by Staff</h2>
+			<button class="btn" onclick="closeStats()">Close</button>
+		</div>
+		<div class="modal-toolbar">
+			<label>Window:
+				<select id="statsRange" onchange="loadStats()">
+					<option value="0">All time</option>
+					<option value="86400000">Last 24 hours</option>
+					<option value="604800000">Last 7 days</option>
+					<option value="2592000000">Last 30 days</option>
+					<option value="7776000000">Last 90 days</option>
+				</select>
+			</label>
+			<span id="statsTotal" class="stats-total"></span>
+		</div>
+		<div id="statsBody"><div class="loading">Loading…</div></div>
+	</div>
+</div>
 <main>
 	<div class="stats" id="stats">
 		<div class="stat"><div class="num" id="totalCount">-</div><div class="label">Total Transcripts</div></div>
@@ -118,6 +157,7 @@ a:hover{color:var(--accent-hover)}
 let currentPage=1,currentSearch="";
 
 let canSeeRestricted=false;
+let canViewStats=false;
 
 async function checkAuth(){
 	try{
@@ -125,13 +165,17 @@ async function checkAuth(){
 		if(!r.ok)throw 0;
 		const d=await r.json();
 		document.getElementById("adminName").textContent=d.username;
-		if(!d.canViewStats){
-			document.querySelector("main").innerHTML='<div style="padding:48px;text-align:center;color:var(--text-dim)">Your account does not have <strong>Admin stats</strong> access. Ask a manager at <a href="https://auth.reforgedz.net" style="color:var(--accent)">auth.reforgedz.net</a>.</div>';
+		if(!d.canViewTable){
+			document.querySelector("main").innerHTML='<div style="padding:48px;text-align:center;color:var(--text-dim)">Your account does not have <strong>View Transcripts</strong> access. Ask a manager at <a href="https://auth.reforgedz.net" style="color:var(--accent)">auth.reforgedz.net</a>.</div>';
 			return false;
 		}
 		canSeeRestricted=!!d.canSeeRestricted;
+		canViewStats=!!d.canViewStats;
 		if(canSeeRestricted){
 			document.getElementById("restrictedToggleWrap").classList.remove("hidden");
+		}
+		if(canViewStats){
+			document.getElementById("statsBtn").classList.remove("hidden");
 		}
 		return true;
 	}catch{window.location.href="/login";return false}
@@ -226,6 +270,51 @@ document.getElementById("showRestricted").addEventListener("change",()=>loadTick
 function changePassword(){
 	window.open("https://auth.reforgedz.net/account","_blank");
 }
+
+function openStats(){
+	document.getElementById("statsModal").classList.remove("hidden");
+	loadStats();
+}
+function closeStats(){
+	document.getElementById("statsModal").classList.add("hidden");
+}
+
+async function loadStats(){
+	const body=document.getElementById("statsBody");
+	body.innerHTML='<div class="loading">Loading…</div>';
+	const since=document.getElementById("statsRange").value;
+	const qs=new URLSearchParams();
+	if(since && since!=="0")qs.set("since",String(Date.now()-parseInt(since,10)));
+	try{
+		const r=await fetch("/api/stats/staff"+(qs.toString()?"?"+qs:""));
+		if(!r.ok){
+			body.innerHTML='<div class="loading">Could not load stats.</div>';
+			return;
+		}
+		const d=await r.json();
+		document.getElementById("statsTotal").textContent=`Total: ${d.total}${d.includesRestricted?" (incl. restricted)":""}`;
+		if(d.staff.length===0){
+			body.innerHTML='<div class="loading">No tickets closed in this window.</div>';
+			return;
+		}
+		const max=d.staff[0].count||1;
+		body.innerHTML=d.staff.map(s=>`
+			<div class="staff-row">
+				<div class="name">${esc(s.name)}<span class="last">last: ${s.lastClosedAt?fmtDate(s.lastClosedAt):"—"}</span></div>
+				<div class="bar"><div style="width:${Math.max(4,(s.count/max)*100)}%"></div></div>
+				<div class="count">${s.count}</div>
+			</div>
+		`).join("");
+	}catch{
+		body.innerHTML='<div class="loading">Network error.</div>';
+	}
+}
+
+document.addEventListener("keydown",(e)=>{
+	if(e.key==="Escape" && !document.getElementById("statsModal").classList.contains("hidden")){
+		closeStats();
+	}
+});
 
 (async()=>{
 	const ok=await checkAuth();

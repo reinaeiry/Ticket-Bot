@@ -1,7 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
-const { requireApiKey, requireStats, hasRestrictedAccess } = require("../middleware/auth");
+const { requireApiKey, requireRead, requireStats, hasRestrictedAccess } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -118,10 +118,10 @@ function mapListRow(r) {
 	};
 }
 
-// GET /api/tickets - Admin stats / table.
-// Requires transcripts.stats. Restricted transcripts are included only if the
+// GET /api/tickets - Admin table.
+// Requires transcripts.read. Restricted transcripts are included only if the
 // caller also has transcripts.restricted (or explicitly opts out via ?showRestricted=0).
-router.get("/tickets", requireStats, (req, res) => {
+router.get("/tickets", requireRead, (req, res) => {
 	const { search, page = 1, limit = 50, showAutoClosed, showRestricted } = req.query;
 	const offset = (parseInt(page) - 1) * parseInt(limit);
 
@@ -148,6 +148,41 @@ router.get("/tickets", requireStats, (req, res) => {
 		page: parseInt(page),
 		totalPages: Math.ceil(countRow.total / parseInt(limit)),
 		canSeeRestricted,
+	});
+});
+
+// GET /api/stats/staff - per-staff close counts (requires transcripts.stats).
+// Optional ?since=<ms> to constrain to a time window. Restricted transcripts are
+// only counted if the caller also has transcripts.restricted.
+router.get("/stats/staff", requireStats, (req, res) => {
+	const since = parseInt(req.query.since, 10) || 0;
+	const canSeeRestricted = hasRestrictedAccess(req);
+
+	const clauses = ["closed_by_name IS NOT NULL", "TRIM(closed_by_name) != ''", "(auto_closed = 0 OR auto_closed IS NULL)"];
+	const params = [];
+	if (!canSeeRestricted) clauses.push("(restricted = 0 OR restricted IS NULL)");
+	if (since > 0) {
+		clauses.push("closed_at >= ?");
+		params.push(since);
+	}
+	const where = `WHERE ${clauses.join(" AND ")}`;
+
+	const rows = db.prepare(`
+		SELECT closed_by_name AS name, closed_by AS userId, COUNT(*) AS count,
+		       MAX(closed_at) AS lastClosedAt
+		FROM transcripts
+		${where}
+		GROUP BY closed_by_name, closed_by
+		ORDER BY count DESC
+	`).all(...params);
+
+	const total = rows.reduce((sum, r) => sum + r.count, 0);
+
+	res.json({
+		staff: rows,
+		total,
+		since,
+		includesRestricted: canSeeRestricted
 	});
 });
 

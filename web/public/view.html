@@ -52,7 +52,7 @@ header h1 .hash{color:var(--accent);font-size:1.2rem}
 <body>
 <header>
 	<h1><span class="hash">#</span> <span id="channelName">Loading...</span></h1>
-	<a class="back-link" href="/admin" id="adminLink" style="display:none">Admin Stats</a>
+	<a class="back-link" href="/admin" id="adminLink" style="display:none">Admin Panel</a>
 </header>
 <div class="meta" id="metaBar"></div>
 <div class="messages" id="messages">
@@ -129,7 +129,7 @@ async function showAdminLinkIfAllowed(){
 		const r=await fetch("/api/auth/me");
 		if(!r.ok)return;
 		const d=await r.json();
-		if(d.canViewStats)document.getElementById("adminLink").style.display="";
+		if(d.canViewTable)document.getElementById("adminLink").style.display="";
 	}catch{}
 }
 

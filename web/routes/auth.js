@@ -10,6 +10,7 @@ router.get("/me", (req, res) => {
 	const tp = req.rzUser.perms?.transcripts || {};
 	res.json({
 		username: req.rzUser.username,
+		canViewTable: !!tp.read,
 		canViewStats: !!tp.stats,
 		canSeeRestricted: !!tp.restricted
 	});
