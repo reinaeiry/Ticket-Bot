@@ -1,11 +1,50 @@
-import { ChannelType, TextChannel } from "discord.js";
+import { ChannelType, GuildMember, TextChannel } from "discord.js";
 import { ExtendedClient, TicketType } from "../structure";
 import { log } from "./logs";
 import { uploadTranscript } from "./uploadTranscript";
 
+function normalizeName(s: string): string {
+	return s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+// Best-effort fuzzy match of an admin username against the bot's cached
+// guild members. Returns the matched member or null. Matches in order:
+//   1. exact case-insensitive equality on username, displayName, or nickname
+//   2. normalized equality (strip punctuation, lowercase)
+//   3. unique substring match on normalized forms
+// "Unknown" / empty inputs always return null.
+function findGuildMemberByName(client: ExtendedClient, name: string): GuildMember | null {
+	const guildId = client.config.guildId;
+	const guild = guildId ? client.guilds.cache.get(guildId) : null;
+	if (!guild || !name) return null;
+	const norm = normalizeName(name);
+	if (!norm) return null;
+	const members = Array.from(guild.members.cache.values());
+
+	for (const m of members) {
+		if (m.user.username.toLowerCase() === name.toLowerCase()) return m;
+		if (m.displayName.toLowerCase() === name.toLowerCase()) return m;
+	}
+	for (const m of members) {
+		if (normalizeName(m.user.username) === norm) return m;
+		if (normalizeName(m.displayName) === norm) return m;
+	}
+	const subs = members.filter((m) =>
+		normalizeName(m.user.username).includes(norm) ||
+		normalizeName(m.displayName).includes(norm)
+	);
+	if (subs.length === 1) return subs[0];
+	return null;
+}
+
 export type ProgrammaticCloseInput = {
 	channelId: string;
-	closedByDiscordId: string;
+	// Admin's username from auth.reforgedz.net (e.g. "eiry"). If left empty
+	// we fall back to closedByName and skip the Discord-member lookup.
+	closedByUsername?: string;
+	// Pre-resolved Discord ID (rare — usually empty so we resolve).
+	closedByDiscordId?: string;
+	// Display name (will be replaced by the resolved member.tag when found).
 	closedByName: string;
 	reason: string;
 };
@@ -45,7 +84,16 @@ export async function closeTicketProgrammatic(
 	const ticketType = JSON.parse(ticket.category) as TicketType;
 	const creator = ticket.creator;
 
-	const closer = { id: input.closedByDiscordId, tag: input.closedByName } as { id: string; tag: string };
+	// Resolve a real Discord member from the admin's auth username. If we
+	// can find one, use their actual tag + id for attribution; otherwise
+	// fall back to the supplied display name with no Discord ID so the
+	// transcript and audit don't fabricate a fake @mention.
+	const matchedMember = input.closedByUsername
+		? findGuildMemberByName(client, input.closedByUsername)
+		: null;
+	const closerId = matchedMember?.id || input.closedByDiscordId || "";
+	const closerName = matchedMember?.user.tag || input.closedByName;
+	const closer = { id: closerId, tag: closerName } as { id: string; tag: string };
 	log(
 		{
 			LogType: "ticketClose",
@@ -85,8 +133,8 @@ export async function closeTicketProgrammatic(
 				category: ticketType?.name || "Unknown",
 				createdBy: creator,
 				createdByName: creatorUser?.tag || creator,
-				closedBy: input.closedByDiscordId,
-				closedByName: input.closedByName,
+				closedBy: closerId,
+				closedByName: closerName,
 				closeReason: input.reason,
 				restricted: isRestricted
 			});
@@ -101,7 +149,7 @@ export async function closeTicketProgrammatic(
 
 	const updated = await client.prisma.tickets.update({
 		data: {
-			closedby: input.closedByDiscordId,
+			closedby: closerId,
 			closedat: Date.now(),
 			closereason: input.reason,
 			transcript: transcriptUrl || null
@@ -111,8 +159,8 @@ export async function closeTicketProgrammatic(
 
 	channel.send({
 		content: transcriptUrl
-			? `> Ticket closed by **${input.closedByName}** via admin panel — Transcript: <${transcriptUrl}>\n> Reason: ${input.reason}`
-			: `> Ticket closed by **${input.closedByName}** via admin panel\n> Reason: ${input.reason}`
+			? `> Ticket closed by **${closerName}** via admin panel — Transcript: <${transcriptUrl}>\n> Reason: ${input.reason}`
+			: `> Ticket closed by **${closerName}** via admin panel\n> Reason: ${input.reason}`
 	}).catch((e) => console.log(e));
 
 	{

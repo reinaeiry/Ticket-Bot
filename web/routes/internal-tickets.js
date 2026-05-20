@@ -39,7 +39,7 @@ const upload = multer({
 	limits: { fileSize: 10 * 1024 * 1024, files: 5 }
 });
 
-const { RELAY_FOOTER_PREFIX } = require("../lib/ticketMessageShape");
+const { RELAY_AUTHOR_SUFFIX } = require("../lib/ticketMessageShape");
 
 function clientOrNull() { return getClient(); }
 function prismaOrNull() { return getPrisma(); }
@@ -178,14 +178,15 @@ router.post("/:channelId/messages", upload.array("files", 5), async (req, res) =
 			name: f.originalname
 		}));
 
-		// Trailing embed carries the relay marker so the GET messages handler
-		// can mark it isAdminRelay without an extra DB or message-id mapping.
+		// Embed-wrapped relay so Discord renders a clean "<admin> · admin
+		// relay" header above the body. The author.name suffix is the
+		// stable round-trip marker we detect in mapMessage.
 		const sendBody = {
 			files,
-			content,
 			embeds: [{
 				color: 0x4f86c6,
-				footer: { text: `${RELAY_FOOTER_PREFIX}${relayUsername}` }
+				author: { name: `${relayUsername}${RELAY_AUTHOR_SUFFIX}` },
+				description: content || undefined
 			}]
 		};
 		const sent = await ch.send(sendBody);
@@ -215,12 +216,13 @@ router.post("/:channelId/close", express.json(), async (req, res) => {
 	try {
 		const client = clientOrNull();
 		if (!client) return res.status(503).json({ error: "discord_client_unavailable" });
-		const { closedByDiscordId, closedByName, reason } = req.body || {};
-		if (!closedByName) return res.status(400).json({ error: "missing_closer" });
+		const { closedByUsername, closedByDiscordId, closedByName, reason } = req.body || {};
+		if (!closedByName && !closedByUsername) return res.status(400).json({ error: "missing_closer" });
 		const result = await closeTicketProgrammatic(client, {
 			channelId: req.params.channelId,
-			closedByDiscordId: String(closedByDiscordId || "0"),
-			closedByName: String(closedByName),
+			closedByUsername: closedByUsername ? String(closedByUsername) : undefined,
+			closedByDiscordId: closedByDiscordId ? String(closedByDiscordId) : undefined,
+			closedByName: String(closedByName || closedByUsername),
 			reason: String(reason || "Closed via admin panel")
 		});
 		if (!result.ok) return res.status(400).json({ error: result.error || "close_failed" });
