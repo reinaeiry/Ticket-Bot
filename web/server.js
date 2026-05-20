@@ -6,9 +6,14 @@ const { attachSession, readyPromise } = require("./middleware/auth");
 
 const AUTH_BASE = (process.env.AUTH_BASE || "https://auth.reforgedz.net").replace(/\/+$/, "");
 
-async function startWebServer() {
+async function startWebServer(opts = {}) {
 	const app = express();
 	const PORT = process.env.WEB_PORT || 3100;
+
+	// Stash the Discord client + prisma so internal routes can fetch channels
+	// and read tickets without re-requiring the bot internals.
+	if (opts.client) app.set("discordClient", opts.client);
+	if (opts.prisma) app.set("prisma", opts.prisma);
 
 	app.use(express.json({ limit: "50mb" }));
 	app.use(express.urlencoded({ extended: true }));
@@ -18,6 +23,8 @@ async function startWebServer() {
 	app.use("/api", require("./routes/api"));
 	app.use("/api/auth", require("./routes/auth"));
 	app.use("/api/internal", require("./routes/internal"));
+	app.use("/api/internal/tickets/events", require("./routes/internal-tickets-sse"));
+	app.use("/api/internal/tickets", require("./routes/internal-tickets"));
 
 	app.get("/t/:id", (req, res) => {
 		res.sendFile(path.join(__dirname, "public", "view.html"));

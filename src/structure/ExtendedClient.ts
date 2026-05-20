@@ -10,7 +10,7 @@ import {
 	GmAppCategoryOpenCommand, CloseCategoryCommand, DevAppCategoryOpenCommand, SyncPermsCommand,
 	BlanketAssignRoleCommand,
 } from "../commands";
-import {InteractionCreateEvent, ReadyEvent, MessageCreateEvent} from "../events";
+import {InteractionCreateEvent, ReadyEvent, MessageCreateEvent, MessageUpdateEvent, MessageDeleteEvent} from "../events";
 import {jsonc} from "jsonc";
 import {REST} from "@discordjs/rest";
 import {Translation} from "../utils/translation";
@@ -82,6 +82,8 @@ export default class ExtendedClient extends Client {
 		this.on("interactionCreate", (interaction) => new InteractionCreateEvent(this).execute(interaction));
 		this.on("ready", () => new ReadyEvent(this).execute());
 		this.on("messageCreate", (message) => new MessageCreateEvent(this).execute(message));
+		this.on("messageUpdate", (oldM, newM) => new MessageUpdateEvent(this).execute(oldM, newM));
+		this.on("messageDelete", (message) => new MessageDeleteEvent(this).execute(message));
 	}
 
 	public async loadRuntimeConfig(): Promise<void> {

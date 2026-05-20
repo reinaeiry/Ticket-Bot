@@ -3,6 +3,8 @@ import {ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvab
 import {BaseEvent, ExtendedClient, SponsorType} from "../structure";
 import { resumePendingDeletes } from "../utils/pendingDeletes";
 import { backfillAllLogs } from "../utils/scrapeLogs";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const clientHolder = require("../../web/lib/clientHolder");
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -116,6 +118,11 @@ export default class ReadyEvent extends BaseEvent {
 		console.log(`\x1b[0m🚀  Bot ready! Logged in as \x1b[37;46;1m${this.client.user?.tag}\x1b[0m`);
 
 		this.client.deployCommands();
+
+		// Expose client + prisma to the (already-running) web server so the
+		// admin Tickets relay routes can fetch channels and send messages.
+		clientHolder.setClient(this.client);
+		clientHolder.setPrisma(this.client.prisma);
 
 		// Fire-and-forget — game-log backfill runs sequentially with paced
 		// fetches so it can take a couple minutes; we don't want it blocking

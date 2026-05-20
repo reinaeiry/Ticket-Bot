@@ -1,6 +1,6 @@
 import fs from "fs-extra";
 import path from "node:path";
-import { GatewayIntentBits } from "discord.js";
+import { GatewayIntentBits, Partials } from "discord.js";
 import { jsonc } from "jsonc";
 import { config as envconf } from "dotenv";
 import {ConfigType, ExtendedClient} from "./structure";
@@ -22,6 +22,10 @@ const config: ConfigType = jsonc.parse(fs.readFileSync(path.join(__dirname, "/..
 
 const client = new ExtendedClient({
 	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers],
+	// Partials so messageDelete/messageUpdate fire even for uncached older
+	// messages — the ticket relay needs to react to edits and deletes for
+	// the whole conversation history.
+	partials: [Partials.Message, Partials.Channel],
 	presence: {
 		status: config.status?.status ?? "online"
 	}
