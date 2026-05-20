@@ -1,5 +1,6 @@
 import { EmbedBuilder, Message } from "discord.js";
 import { ExtendedClient } from "../structure";
+import { isLogChannel, handleLiveLogMessage } from "../utils/scrapeLogs";
 
 const DISALLOWED_MEDIA_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:twitch\.tv|clips\.twitch\.tv|streamable\.com|vimeo\.com|dailymotion\.com|facebook\.com\/.*\/videos)/i;
 const YOUTUBE_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[\w-]+/i;
@@ -12,6 +13,13 @@ export default class MessageCreateEvent {
 	}
 
 	public async execute(message: Message): Promise<void> {
+		// Game-log scraper runs BEFORE the bot/ticket filters because log
+		// channels are fed by webhooks/apps (message.author.bot === true).
+		if (isLogChannel(message.channelId)) {
+			handleLiveLogMessage(message).catch((err) => console.error("[scrapeLogs] live ingest failed:", err));
+			return;
+		}
+
 		if (message.author.bot) return;
 		if (!message.guild) return;
 

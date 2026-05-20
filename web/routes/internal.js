@@ -5,6 +5,7 @@
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
+const logStore = require("../lib/logStore");
 
 const router = express.Router();
 
@@ -141,6 +142,55 @@ router.get("/transcripts/by-discord-id/:id", (req, res) => {
 	if (!did) return res.status(400).json({ error: "missing_discord_id" });
 	const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
 	res.json({ transcripts: listForFilter("created_by = ?", [did], limit) });
+});
+
+// ─── Game logs ─────────────────────────────────────────────────────────────
+// Query parameters:
+//   guid        — match against player_guid / target_guid AND all
+//                 historically-linked names for that guid
+//   name        — case-insensitive equality on player_name / target_name
+//                 (used by the top-level Logs tab's player search)
+//   nameSearch  — case-insensitive substring on player_name / target_name
+//   types       — comma-separated list of: anticheat,shop,kill,death,chat,base
+//   servers     — comma-separated list of server tags (NA1, NA2, EU1, EU2)
+//   q           — substring search across raw text / names / category
+//   sinceMs / untilMs — optional time window
+//   limit (<=500), offset
+router.get("/logs", (req, res) => {
+	try {
+		const types = req.query.types ? String(req.query.types).split(",").map((s) => s.trim()).filter(Boolean) : null;
+		const servers = req.query.servers ? String(req.query.servers).split(",").map((s) => s.trim()).filter(Boolean) : null;
+		const rows = logStore.listLogs({
+			guid: req.query.guid ? String(req.query.guid).trim().toLowerCase() : null,
+			name: req.query.name ? String(req.query.name).trim() : null,
+			types,
+			servers,
+			q: req.query.q ? String(req.query.q).trim() : null,
+			since: req.query.sinceMs ? +req.query.sinceMs : null,
+			until: req.query.untilMs ? +req.query.untilMs : null,
+			limit: req.query.limit ? +req.query.limit : 100,
+			offset: req.query.offset ? +req.query.offset : 0
+		});
+		res.json({ logs: rows });
+	} catch (err) {
+		console.error("[/api/internal/logs] error:", err);
+		res.status(500).json({ error: "internal_error" });
+	}
+});
+
+router.get("/logs/names-for-guid/:guid", (req, res) => {
+	const guid = String(req.params.guid || "").trim().toLowerCase();
+	if (!guid) return res.status(400).json({ error: "missing_guid" });
+	res.json({ names: logStore.knownNamesForGuid(guid) });
+});
+
+// Manual link upsert — lets the admin server feed authoritative (name, guid)
+// pairs (e.g. from BattleMetrics resolves) into the lookup table.
+router.post("/logs/remember-link", express.json(), (req, res) => {
+	const { name, guid, atMs } = req.body || {};
+	if (!name || !guid) return res.status(400).json({ error: "missing_name_or_guid" });
+	logStore.rememberLink(String(name), String(guid).toLowerCase(), +atMs || Date.now());
+	res.json({ ok: true });
 });
 
 module.exports = router;

@@ -2,6 +2,7 @@ import axios from "axios";
 import {ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ColorResolvable, EmbedBuilder, Message} from "discord.js";
 import {BaseEvent, ExtendedClient, SponsorType} from "../structure";
 import { resumePendingDeletes } from "../utils/pendingDeletes";
+import { backfillAllLogs } from "../utils/scrapeLogs";
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -115,6 +116,11 @@ export default class ReadyEvent extends BaseEvent {
 		console.log(`\x1b[0m🚀  Bot ready! Logged in as \x1b[37;46;1m${this.client.user?.tag}\x1b[0m`);
 
 		this.client.deployCommands();
+
+		// Fire-and-forget — game-log backfill runs sequentially with paced
+		// fetches so it can take a couple minutes; we don't want it blocking
+		// the rest of the ready handler.
+		backfillAllLogs(this.client).catch((err) => console.error("[scrapeLogs] backfill failed:", err));
 	}
 
 	private setStatus(): void {
