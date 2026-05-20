@@ -26,9 +26,22 @@ router.post("/upload", requireApiKey, (req, res) => {
 		const id = crypto.randomUUID();
 		const messageCount = Array.isArray(messages) ? messages.length : 0;
 
+		// Pull the ticket-opener's avatar from the first message they authored
+		// in-channel (the bot's intro message pings them, their first reply
+		// carries the avatar URL).
+		let createdByAvatar = null;
+		if (createdBy && Array.isArray(messages)) {
+			for (const m of messages) {
+				if (m?.author?.id === createdBy && m.author.avatar) {
+					createdByAvatar = String(m.author.avatar);
+					break;
+				}
+			}
+		}
+
 		db.prepare(`
-			INSERT INTO transcripts (id, ticket_id, channel_name, category, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages, auto_closed, restricted, guid)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			INSERT INTO transcripts (id, ticket_id, channel_name, category, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages, auto_closed, restricted, guid, created_by_avatar)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			id,
 			ticketId || null,
@@ -45,6 +58,7 @@ router.post("/upload", requireApiKey, (req, res) => {
 			autoClosed ? 1 : 0,
 			restricted ? 1 : 0,
 			(typeof guid === "string" && guid.trim()) ? guid.trim().toLowerCase() : null,
+			createdByAvatar,
 		);
 
 		res.json({ id });

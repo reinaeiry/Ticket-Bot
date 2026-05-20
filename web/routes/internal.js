@@ -36,7 +36,8 @@ router.get("/linkages/by-guid/:guid", (req, res) => {
 	const like = `%${guid}%`;
 	const row = db.prepare(`
 		SELECT created_by AS discordId, created_by_name AS discordUsername,
-		       guid, closed_at AS lastSeenAt
+		       created_by_avatar AS discordAvatarUrl,
+		       guid, messages, closed_at AS lastSeenAt
 		FROM transcripts
 		WHERE created_by IS NOT NULL
 		  AND (LOWER(guid) = ? OR LOWER(messages) LIKE ?)
@@ -44,9 +45,22 @@ router.get("/linkages/by-guid/:guid", (req, res) => {
 		LIMIT 1
 	`).get(guid, like);
 	if (!row) return res.status(404).json({ error: "not_found" });
+	// Fallback avatar lookup for legacy transcripts where the column wasn't
+	// populated at upload time. Scans messages JSON for the first author
+	// entry matching the createdBy ID.
+	let avatar = row.discordAvatarUrl;
+	if (!avatar && row.messages) {
+		try {
+			const msgs = JSON.parse(row.messages);
+			for (const m of msgs) {
+				if (m?.author?.id === row.discordId && m.author.avatar) { avatar = m.author.avatar; break; }
+			}
+		} catch { /* malformed json — skip */ }
+	}
 	res.json({
 		discordId: row.discordId,
 		discordUsername: row.discordUsername,
+		discordAvatarUrl: avatar || null,
 		guid: row.guid || guid,
 		lastSeenAt: row.lastSeenAt
 	});
@@ -57,6 +71,7 @@ router.get("/linkages/by-discord-id/:id", (req, res) => {
 	if (!did) return res.status(400).json({ error: "missing_discord_id" });
 	const row = db.prepare(`
 		SELECT created_by AS discordId, created_by_name AS discordUsername,
+		       created_by_avatar AS discordAvatarUrl,
 		       guid, closed_at AS lastSeenAt
 		FROM transcripts
 		WHERE created_by = ? AND guid IS NOT NULL
@@ -64,9 +79,9 @@ router.get("/linkages/by-discord-id/:id", (req, res) => {
 		LIMIT 1
 	`).get(did);
 	if (!row) {
-		// Fall back to just the Discord side (transcript present but no guid yet)
 		const r2 = db.prepare(`
 			SELECT created_by AS discordId, created_by_name AS discordUsername,
+			       created_by_avatar AS discordAvatarUrl,
 			       closed_at AS lastSeenAt
 			FROM transcripts
 			WHERE created_by = ?
@@ -77,6 +92,7 @@ router.get("/linkages/by-discord-id/:id", (req, res) => {
 		return res.json({
 			discordId: r2.discordId,
 			discordUsername: r2.discordUsername,
+			discordAvatarUrl: r2.discordAvatarUrl || null,
 			guid: null,
 			lastSeenAt: r2.lastSeenAt
 		});
@@ -84,6 +100,7 @@ router.get("/linkages/by-discord-id/:id", (req, res) => {
 	res.json({
 		discordId: row.discordId,
 		discordUsername: row.discordUsername,
+		discordAvatarUrl: row.discordAvatarUrl || null,
 		guid: row.guid,
 		lastSeenAt: row.lastSeenAt
 	});

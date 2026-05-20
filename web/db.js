@@ -48,6 +48,7 @@ const hasCol = (n) => cols.some((c) => c.name === n);
 if (!hasCol("auto_closed")) db.exec(`ALTER TABLE transcripts ADD COLUMN auto_closed INTEGER DEFAULT 0`);
 if (!hasCol("restricted")) db.exec(`ALTER TABLE transcripts ADD COLUMN restricted INTEGER DEFAULT 0`);
 if (!hasCol("guid")) db.exec(`ALTER TABLE transcripts ADD COLUMN guid TEXT`);
+if (!hasCol("created_by_avatar")) db.exec(`ALTER TABLE transcripts ADD COLUMN created_by_avatar TEXT`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_transcripts_guid ON transcripts(guid)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_transcripts_created_by ON transcripts(created_by)`);
 
