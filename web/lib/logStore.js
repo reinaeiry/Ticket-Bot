@@ -113,6 +113,7 @@ function ingestParsed(channelId, messageId, rows) {
 		});
 	});
 	tx();
+	if (inserted) clearHotCache();
 	return inserted;
 }
 
@@ -129,7 +130,32 @@ function knownNamesForGuid(guid) {
 
 // Query API ────────────────────────────────────────────────────────────────
 
+// Small in-process cache for the hot paths (top-of-list page with no
+// search query). Most "Logs" tab traffic hits this and it lets us serve
+// repeated requests in microseconds without touching SQLite.
+const HOT_CACHE_TTL_MS = 10_000;
+const hotCache = new Map();
+function hotKey(opts) {
+	return [
+		opts.guid || "",
+		opts.name || "",
+		(opts.types || []).join(","),
+		(opts.servers || []).join(","),
+		opts.q || "",
+		opts.since || "",
+		opts.until || "",
+		opts.limit,
+		opts.offset
+	].join("|");
+}
+// Live ingest invalidates the cache - small set so this stays cheap.
+function clearHotCache() { hotCache.clear(); }
+
 function listLogs({ guid, name, types, servers, q, since, until, limit = 100, offset = 0 } = {}) {
+	const opts = { guid, name, types, servers, q, since, until, limit, offset };
+	const k = hotKey(opts);
+	const hit = hotCache.get(k);
+	if (hit && hit.expiresAt > Date.now()) return hit.value;
 	const where = [];
 	const params = [];
 
@@ -174,10 +200,17 @@ function listLogs({ guid, name, types, servers, q, since, until, limit = 100, of
 		LIMIT ? OFFSET ?
 	`;
 	params.push(Math.min(+limit || 100, 500), Math.max(+offset || 0, 0));
-	return db.prepare(sql).all(...params).map((r) => ({
+	const out = db.prepare(sql).all(...params).map((r) => ({
 		...r,
 		details: r.details ? JSON.parse(r.details) : null
 	}));
+	hotCache.set(k, { value: out, expiresAt: Date.now() + HOT_CACHE_TTL_MS });
+	// Keep the cache bounded — drop oldest if we grow past ~64 entries.
+	if (hotCache.size > 64) {
+		const oldest = hotCache.keys().next().value;
+		hotCache.delete(oldest);
+	}
+	return out;
 }
 
 function getLastScrapedMessageId(channelId) {

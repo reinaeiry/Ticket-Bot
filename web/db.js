@@ -3,8 +3,13 @@ const path = require("path");
 
 const db = new Database(path.join(__dirname, "transcripts.db"));
 
-// Enable WAL mode for better concurrent reads
+// Enable WAL mode for better concurrent reads, plus a generous page cache
+// (64MB) so the entire game_logs working set stays hot for sub-ms reads.
 db.pragma("journal_mode = WAL");
+db.pragma("synchronous = NORMAL");
+db.pragma("cache_size = -64000");
+db.pragma("temp_store = MEMORY");
+db.pragma("mmap_size = 268435456");
 
 // Create tables
 db.exec(`
