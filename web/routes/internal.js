@@ -185,9 +185,13 @@ router.get("/logs", (req, res) => {
 				return s && t ? { scope: s.trim(), type: t.trim() } : null;
 			}).filter(Boolean)
 			: null;
+		const namesList = req.query.names
+			? String(req.query.names).split(",").map((s) => s.trim()).filter(Boolean)
+			: null;
 		const rows = logStore.listLogs({
 			guid: req.query.guid ? String(req.query.guid).trim().toLowerCase() : null,
 			name: req.query.name ? String(req.query.name).trim() : null,
+			names: namesList,
 			types,
 			servers,
 			scopes,

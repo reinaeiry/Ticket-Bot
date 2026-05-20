@@ -164,6 +164,7 @@ function hotKey(opts) {
 	return [
 		opts.guid || "",
 		opts.name || "",
+		(opts.names || []).join(":"),
 		(opts.types || []).join(","),
 		(opts.servers || []).join(","),
 		(opts.scopes || []).join(","),
@@ -178,28 +179,40 @@ function hotKey(opts) {
 // Live ingest invalidates the cache - small set so this stays cheap.
 function clearHotCache() { hotCache.clear(); }
 
-function listLogs({ guid, name, types, servers, scopes, scopePairs, q, since, until, limit = 100, offset = 0 } = {}) {
-	const opts = { guid, name, types, servers, scopes, scopePairs, q, since, until, limit, offset };
+function listLogs({ guid, name, names, types, servers, scopes, scopePairs, q, since, until, limit = 100, offset = 0 } = {}) {
+	const opts = { guid, name, names, types, servers, scopes, scopePairs, q, since, until, limit, offset };
 	const k = hotKey(opts);
 	const hit = hotCache.get(k);
 	if (hit && hit.expiresAt > Date.now()) return hit.value;
 	const where = [];
 	const params = [];
 
-	// Player filter: GUID match OR known-names-for-guid OR the explicit name.
-	if (guid) {
-		const names = knownNamesForGuid(guid);
-		const parts = ["player_guid = ?", "target_guid = ?"];
-		params.push(guid, guid);
-		for (const n of names) {
+	// Player filter: union of all the ways we can identify the player.
+	//   guid          - direct match on player_guid / target_guid
+	//   knownNames    - any name historically linked to this guid
+	//   name          - an explicit name (case-insensitive)
+	//   names[]       - extra names the caller knows about (BM identifier
+	//                   history, current name from BM profile, etc.) so chat
+	//                   and kill rows for that player surface even when the
+	//                   name has never been logged with a UID before.
+	const haveAny = !!guid || !!name || (names && names.length > 0);
+	if (haveAny) {
+		const parts = [];
+		const nameSet = new Set();
+		if (guid) {
+			parts.push("player_guid = ?", "target_guid = ?");
+			params.push(guid, guid);
+			for (const n of knownNamesForGuid(guid)) nameSet.add(n.toLowerCase());
+		}
+		if (name) nameSet.add(name.toLowerCase());
+		if (names && names.length) for (const n of names) if (n) nameSet.add(n.toLowerCase());
+		// De-duped — one pair of OR'd clauses per name.
+		for (const n of nameSet) {
 			parts.push("player_name = ? COLLATE NOCASE");
 			parts.push("target_name = ? COLLATE NOCASE");
 			params.push(n, n);
 		}
-		where.push("(" + parts.join(" OR ") + ")");
-	} else if (name) {
-		where.push("(player_name = ? COLLATE NOCASE OR target_name = ? COLLATE NOCASE)");
-		params.push(name, name);
+		if (parts.length) where.push("(" + parts.join(" OR ") + ")");
 	}
 
 	if (types && types.length) {
