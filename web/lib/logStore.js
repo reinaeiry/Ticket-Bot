@@ -268,24 +268,56 @@ function listLogs({ guid, name, names, types, servers, scopes, scopePairs, q, si
 // deaths and being a kill target), then computes K/D and the mean
 // inter-death interval as "avg time alive" — capped at 4 hours so massive
 // offline gaps between sessions don't dominate the mean.
-const stmtKillCount = db.prepare("SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'kill' AND player_guid = ?");
-const stmtDeathStandalone = db.prepare("SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'death' AND player_guid = ?");
-const stmtDeathAsTarget = db.prepare("SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'kill' AND target_guid = ?");
-const stmtAllDeathTs = db.prepare(`
-	SELECT ts_ms FROM game_logs
-	WHERE (log_type = 'death' AND player_guid = ?)
-	   OR (log_type = 'kill' AND target_guid = ?)
-	ORDER BY ts_ms ASC
-`);
-
+//
+// Matches by guid AND by any provided names so kill / death / chat rows
+// whose player_guid was never linked (most of them, since only anticheat
+// lines include both name and UID) still get counted. De-duped against
+// the name_to_guid table to avoid double-counting when a name IS linked.
 const MAX_GAP_MS = 4 * 60 * 60 * 1000; // 4 hours
 
-function playerStats(guid) {
-	if (!guid) return null;
-	const g = String(guid).toLowerCase();
-	const kills = stmtKillCount.get(g).n;
-	const deaths = stmtDeathStandalone.get(g).n + stmtDeathAsTarget.get(g).n;
-	const ts = stmtAllDeathTs.all(g, g).map((r) => r.ts_ms);
+function buildPlayerMatchers(guid, names) {
+	const nameSet = new Set();
+	if (guid) for (const n of knownNamesForGuid(guid)) nameSet.add(n.toLowerCase());
+	if (names && names.length) for (const n of names) if (n) nameSet.add(String(n).toLowerCase());
+	return { guid: guid ? String(guid).toLowerCase() : null, names: Array.from(nameSet) };
+}
+
+function playerStats(guid, names) {
+	const m = buildPlayerMatchers(guid, names);
+	if (!m.guid && !m.names.length) return null;
+
+	const killWhere = [];
+	const killParams = [];
+	if (m.guid) { killWhere.push("player_guid = ?"); killParams.push(m.guid); }
+	for (const n of m.names) { killWhere.push("player_name = ? COLLATE NOCASE"); killParams.push(n); }
+	const killSql = `SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'kill' AND (${killWhere.join(" OR ")})`;
+	const kills = db.prepare(killSql).get(...killParams).n;
+
+	const deathStandaloneWhere = [];
+	const deathStandaloneParams = [];
+	if (m.guid) { deathStandaloneWhere.push("player_guid = ?"); deathStandaloneParams.push(m.guid); }
+	for (const n of m.names) { deathStandaloneWhere.push("player_name = ? COLLATE NOCASE"); deathStandaloneParams.push(n); }
+	const deathsStandalone = db.prepare(
+		`SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'death' AND (${deathStandaloneWhere.join(" OR ")})`
+	).get(...deathStandaloneParams).n;
+
+	const targetWhere = [];
+	const targetParams = [];
+	if (m.guid) { targetWhere.push("target_guid = ?"); targetParams.push(m.guid); }
+	for (const n of m.names) { targetWhere.push("target_name = ? COLLATE NOCASE"); targetParams.push(n); }
+	const deathsAsTarget = db.prepare(
+		`SELECT COUNT(*) AS n FROM game_logs WHERE log_type = 'kill' AND (${targetWhere.join(" OR ")})`
+	).get(...targetParams).n;
+
+	const deaths = deathsStandalone + deathsAsTarget;
+
+	const allDeathSql = `
+		SELECT ts_ms FROM game_logs
+		WHERE (log_type = 'death' AND (${deathStandaloneWhere.join(" OR ")}))
+		   OR (log_type = 'kill'  AND (${targetWhere.join(" OR ")}))
+		ORDER BY ts_ms ASC
+	`;
+	const ts = db.prepare(allDeathSql).all(...deathStandaloneParams, ...targetParams).map((r) => r.ts_ms);
 	let gapSum = 0, gapN = 0;
 	for (let i = 1; i < ts.length; i++) {
 		const d = ts[i] - ts[i - 1];
