@@ -128,7 +128,7 @@ async function load(){
 	try{
 		const r=await fetch(`/api/transcript/${tid}`);
 		if(r.status===401){
-			document.getElementById("messages").innerHTML='<div class="error">Restricted — <a href="/appeals" style="color:var(--accent)">unlock application / ban appeal transcripts</a> to view</div>';
+			document.getElementById("messages").innerHTML='<div class="error">Restricted — sign in with an account that has <strong>Access Restricted Transcripts</strong> permission to view. Manage at <a href="https://auth.reforgedz.net" style="color:var(--accent)">auth.reforgedz.net</a>.</div>';
 			return;
 		}
 		if(r.status===403){

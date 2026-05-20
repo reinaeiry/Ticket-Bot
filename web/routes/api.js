@@ -1,11 +1,11 @@
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
-const { requireAuth, requireApiKey, requireAppealAuth, hasAppealAuth, requireDeletePerm } = require("../middleware/auth");
+const { requireApiKey, requireStats, hasRestrictedAccess } = require("../middleware/auth");
 
 const router = express.Router();
 
-// POST /api/upload - Bot uploads a transcript
+// POST /api/upload - Bot uploads a transcript (API key, not session)
 router.post("/upload", requireApiKey, (req, res) => {
 	try {
 		const {
@@ -52,7 +52,9 @@ router.post("/upload", requireApiKey, (req, res) => {
 	}
 });
 
-// GET /api/transcript/:id - Get a single transcript
+// GET /api/transcript/:id - View a single transcript.
+// Open to anyone with the share link, but restricted transcripts require the
+// transcripts.restricted perm on the viewer's SSO account.
 router.get("/transcript/:id", (req, res) => {
 	const row = db.prepare("SELECT * FROM transcripts WHERE id = ?").get(req.params.id);
 	if (!row) return res.status(404).json({ error: "Transcript not found" });
@@ -61,8 +63,8 @@ router.get("/transcript/:id", (req, res) => {
 		return res.status(403).json({ error: "Auto-closed tickets have no transcript" });
 	}
 
-	if (row.restricted && !hasAppealAuth(req)) {
-		return res.status(401).json({ error: "Restricted transcript - appeal authentication required" });
+	if (row.restricted && !hasRestrictedAccess(req)) {
+		return res.status(401).json({ error: "Restricted transcript — requires Access Restricted Transcripts permission" });
 	}
 
 	res.json({
@@ -83,13 +85,11 @@ router.get("/transcript/:id", (req, res) => {
 	});
 });
 
-function buildListQuery({ search, includeAutoClosed, restrictedFilter }) {
+function buildListQuery({ search, includeAutoClosed, includeRestricted }) {
 	const clauses = [];
 	const params = [];
 
-	if (restrictedFilter === "only") clauses.push("restricted = 1");
-	else if (restrictedFilter === "exclude") clauses.push("(restricted = 0 OR restricted IS NULL)");
-
+	if (!includeRestricted) clauses.push("(restricted = 0 OR restricted IS NULL)");
 	if (!includeAutoClosed) clauses.push("(auto_closed = 0 OR auto_closed IS NULL)");
 
 	if (search && search.trim()) {
@@ -118,15 +118,20 @@ function mapListRow(r) {
 	};
 }
 
-// GET /api/tickets - Admin search/list regular tickets (restricted hidden)
-router.get("/tickets", requireAuth, (req, res) => {
-	const { search, page = 1, limit = 50, showAutoClosed } = req.query;
+// GET /api/tickets - Admin stats / table.
+// Requires transcripts.stats. Restricted transcripts are included only if the
+// caller also has transcripts.restricted (or explicitly opts out via ?showRestricted=0).
+router.get("/tickets", requireStats, (req, res) => {
+	const { search, page = 1, limit = 50, showAutoClosed, showRestricted } = req.query;
 	const offset = (parseInt(page) - 1) * parseInt(limit);
+
+	const canSeeRestricted = hasRestrictedAccess(req);
+	const includeRestricted = canSeeRestricted && (showRestricted !== "0" && showRestricted !== "false");
 
 	const { where, params } = buildListQuery({
 		search,
 		includeAutoClosed: showAutoClosed === "1" || showAutoClosed === "true",
-		restrictedFilter: "exclude",
+		includeRestricted,
 	});
 
 	const countRow = db.prepare(`SELECT COUNT(*) as total FROM transcripts ${where}`).get(...params);
@@ -142,46 +147,8 @@ router.get("/tickets", requireAuth, (req, res) => {
 		total: countRow.total,
 		page: parseInt(page),
 		totalPages: Math.ceil(countRow.total / parseInt(limit)),
+		canSeeRestricted,
 	});
-});
-
-// GET /api/appeal-tickets - Ban appeals / applications list (requires appeal auth)
-router.get("/appeal-tickets", requireAppealAuth, (req, res) => {
-	const { search, page = 1, limit = 50 } = req.query;
-	const offset = (parseInt(page) - 1) * parseInt(limit);
-
-	const { where, params } = buildListQuery({
-		search,
-		includeAutoClosed: true,
-		restrictedFilter: "only",
-	});
-
-	const countRow = db.prepare(`SELECT COUNT(*) as total FROM transcripts ${where}`).get(...params);
-	const rows = db.prepare(`
-		SELECT id, ticket_id, channel_name, category, created_by_name, closed_by_name, close_reason, closed_at, message_count, auto_closed, restricted
-		FROM transcripts ${where}
-		ORDER BY closed_at DESC
-		LIMIT ? OFFSET ?
-	`).all(...params, parseInt(limit), offset);
-
-	res.json({
-		tickets: rows.map(mapListRow),
-		total: countRow.total,
-		page: parseInt(page),
-		totalPages: Math.ceil(countRow.total / parseInt(limit)),
-	});
-});
-
-// DELETE /api/transcript/:id - Admin delete a transcript
-router.delete("/transcript/:id", requireAuth, requireDeletePerm, (req, res) => {
-	const row = db.prepare("SELECT restricted FROM transcripts WHERE id = ?").get(req.params.id);
-	if (!row) return res.status(404).json({ error: "Not found" });
-	if (row.restricted && !hasAppealAuth(req)) {
-		return res.status(401).json({ error: "Appeal authentication required" });
-	}
-	const result = db.prepare("DELETE FROM transcripts WHERE id = ?").run(req.params.id);
-	if (result.changes === 0) return res.status(404).json({ error: "Not found" });
-	res.json({ success: true });
 });
 
 module.exports = router;

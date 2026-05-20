@@ -68,6 +68,7 @@ a:hover{color:var(--accent-hover)}
 .toggle input:checked{background:var(--accent-dim);border-color:var(--accent)}
 .toggle input:checked::before{background:var(--accent);left:17px}
 .muted-row td{opacity:.55}
+.hidden{display:none !important}
 .auto-badge{display:inline-block;padding:2px 8px;border-radius:3px;background:rgba(241,196,15,.12);color:#f1c40f;border:1px solid rgba(241,196,15,.25);font-size:.7rem;font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.5px}
 .no-link{color:var(--text-ghost);font-size:.78rem;font-style:italic}
 </style>
@@ -78,7 +79,6 @@ a:hover{color:var(--accent-hover)}
 	<div class="header-right">
 		<span id="adminName"></span>
 		<button class="btn" onclick="changePassword()">Change Password</button>
-		<button class="btn" onclick="openAppeals()">Access Ban Appeal Transcripts</button>
 		<button class="btn btn-accent" onclick="logout()">Logout</button>
 	</div>
 </header>
@@ -94,6 +94,7 @@ a:hover{color:var(--accent-hover)}
 	</div>
 	<div class="toolbar">
 		<label class="toggle"><input type="checkbox" id="showAutoClosed"> Show Auto-Closed</label>
+		<label class="toggle hidden" id="restrictedToggleWrap"><input type="checkbox" id="showRestricted" checked> Show Restricted Transcripts</label>
 	</div>
 	<div id="tableWrap">
 		<table>
@@ -116,13 +117,24 @@ a:hover{color:var(--accent-hover)}
 <script>
 let currentPage=1,currentSearch="";
 
+let canSeeRestricted=false;
+
 async function checkAuth(){
 	try{
 		const r=await fetch("/api/auth/me");
 		if(!r.ok)throw 0;
 		const d=await r.json();
 		document.getElementById("adminName").textContent=d.username;
-	}catch{window.location.href="/login"}
+		if(!d.canViewStats){
+			document.querySelector("main").innerHTML='<div style="padding:48px;text-align:center;color:var(--text-dim)">Your account does not have <strong>Admin stats</strong> access. Ask a manager at <a href="https://auth.reforgedz.net" style="color:var(--accent)">auth.reforgedz.net</a>.</div>';
+			return false;
+		}
+		canSeeRestricted=!!d.canSeeRestricted;
+		if(canSeeRestricted){
+			document.getElementById("restrictedToggleWrap").classList.remove("hidden");
+		}
+		return true;
+	}catch{window.location.href="/login";return false}
 }
 
 function catClass(cat){
@@ -148,6 +160,7 @@ async function loadTickets(page=1,search=""){
 	const params=new URLSearchParams({page,limit:50});
 	if(search)params.set("search",search);
 	if(document.getElementById("showAutoClosed").checked)params.set("showAutoClosed","1");
+	if(canSeeRestricted && !document.getElementById("showRestricted").checked)params.set("showRestricted","0");
 	try{
 		const r=await fetch("/api/tickets?"+params);
 		if(!r.ok)throw 0;
@@ -207,16 +220,17 @@ async function logout(){
 	window.location.href="/login";
 }
 
-function openAppeals(){window.location.href="/appeals"}
-
 document.getElementById("showAutoClosed").addEventListener("change",()=>loadTickets(1,currentSearch));
+document.getElementById("showRestricted").addEventListener("change",()=>loadTickets(1,currentSearch));
 
 function changePassword(){
 	window.open("https://auth.reforgedz.net/account","_blank");
 }
 
-checkAuth();
-loadTickets();
+(async()=>{
+	const ok=await checkAuth();
+	if(ok)loadTickets();
+})();
 </script>
 </body>
 </html>

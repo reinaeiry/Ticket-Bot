@@ -26,10 +26,6 @@ async function startWebServer() {
 		res.sendFile(path.join(__dirname, "public", "admin.html"));
 	});
 
-	app.get("/appeals", (req, res) => {
-		res.sendFile(path.join(__dirname, "public", "appeals.html"));
-	});
-
 	// Login lives at auth.reforgedz.net now — redirect with a return URL.
 	app.get("/login", (req, res) => {
 		const proto = req.headers["x-forwarded-proto"] || req.protocol || "https";

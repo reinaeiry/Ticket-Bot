@@ -16,29 +16,24 @@ const rzAuth = makeRzAuth({
 
 async function readyPromise() { await rzAuth.ready(); }
 
-function requireAuth(req, res, next) {
+// transcripts.read — view a single transcript via /t/:id
+function requireRead(req, res, next) {
 	if (!req.rzUser) return res.status(401).json({ error: "Not authenticated" });
 	if (!req.rzUser.perms?.transcripts?.read) return res.status(403).json({ error: "Forbidden" });
 	req.admin = { username: req.rzUser.username };
 	next();
 }
 
-function requireAppealAuth(req, res, next) {
+// transcripts.stats — admin table + counts
+function requireStats(req, res, next) {
 	if (!req.rzUser) return res.status(401).json({ error: "Not authenticated" });
-	if (!req.rzUser.perms?.transcripts?.read) return res.status(403).json({ error: "Forbidden" });
-	if (!req.rzUser.perms?.transcripts?.appeals) return res.status(401).json({ error: "Appeal authentication required" });
+	if (!req.rzUser.perms?.transcripts?.stats) return res.status(403).json({ error: "Forbidden" });
 	req.admin = { username: req.rzUser.username };
 	next();
 }
 
-function hasAppealAuth(req) {
-	return !!(req.rzUser && req.rzUser.perms?.transcripts?.appeals);
-}
-
-function requireDeletePerm(req, res, next) {
-	if (!req.rzUser) return res.status(401).json({ error: "Not authenticated" });
-	if (!req.rzUser.perms?.transcripts?.delete) return res.status(403).json({ error: "Forbidden" });
-	next();
+function hasRestrictedAccess(req) {
+	return !!(req.rzUser && req.rzUser.perms?.transcripts?.restricted);
 }
 
 function requireApiKey(req, res, next) {
@@ -52,9 +47,10 @@ function requireApiKey(req, res, next) {
 module.exports = {
 	attachSession: rzAuth.attachSession,
 	readyPromise,
-	requireAuth,
-	requireAppealAuth,
-	hasAppealAuth,
-	requireDeletePerm,
-	requireApiKey
+	requireRead,
+	requireStats,
+	hasRestrictedAccess,
+	requireApiKey,
+	// Back-compat alias for any caller still importing requireAuth.
+	requireAuth: requireRead
 };
