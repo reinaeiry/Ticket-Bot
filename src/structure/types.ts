@@ -163,4 +163,5 @@ export type TicketType = {
 	askQuestions: boolean;
 	questions: TicketQuestionType[];
 	staffRoles?: string[];
+	blockedRoles?: string[];
 };

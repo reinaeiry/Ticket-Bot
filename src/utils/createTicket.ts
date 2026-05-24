@@ -116,6 +116,18 @@ export const createTicket = async (
 				});
 		}
 
+		for (const role of ticketType.blockedRoles ?? []) {
+			await channel.permissionOverwrites
+				.edit(role, {
+					ViewChannel: false,
+					SendMessages: false,
+					AddReactions: false,
+					ReadMessageHistory: false,
+					AttachFiles: false
+				})
+				.catch((e) => console.log(`createTicket block role ${role}:`, e));
+		}
+
 		const footer = locale.getSubValue("embeds", "ticketOpened", "footer", "text");
 		if (ticketType.color?.toString().trim() === "") ticketType.color = undefined;
 		const ticketOpenedEmbed = new EmbedBuilder({

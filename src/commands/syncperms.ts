@@ -68,6 +68,18 @@ export default class SyncPermsCommand extends BaseCommand {
 					.catch((e) => console.log(`syncperms ${ticket.id} role ${roleId}:`, e));
 			}
 
+			for (const roleId of currentType.blockedRoles ?? []) {
+				await channel.permissionOverwrites
+					.edit(roleId, {
+						ViewChannel: false,
+						SendMessages: false,
+						AddReactions: false,
+						ReadMessageHistory: false,
+						AttachFiles: false,
+					})
+					.catch((e) => console.log(`syncperms ${ticket.id} block ${roleId}:`, e));
+			}
+
 			updated++;
 		}
 
