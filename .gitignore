@@ -6,3 +6,4 @@ transcript-server/node_modules/
 transcript-server/data/
 transcript-server/*.db
 transcript-server/*.db-*
+.superpowers/
