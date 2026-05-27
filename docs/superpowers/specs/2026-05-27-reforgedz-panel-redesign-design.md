@@ -5,7 +5,7 @@
 **Target:** Pterodactyl Panel v1.12.0 at `panel.reforgedz.net` (server `144.76.199.155`, `/var/www/pterodactyl`)
 **Goal:** Re-theme the panel (client + admin) to match reforgedz.net's blood-red/black identity, preserving all functionality.
 
-> Note: this spec lives in the ticket-bot repo only because it is the active tracked repo; the panel host is not a git repo. Move it if a better home exists.
+> Note: this spec lives in the ticket-bot repo only because it is the active tracked repo; the panel host is not a git repo.
 
 ## Decisions (locked)
 
@@ -13,76 +13,91 @@
 - **Status color:** green `#2ecc71` = online (unchanged). Red reserved for branding/accents.
 - **Logo:** `REFORGEDZ` expanded wordmark, Oswald Semibold uppercase — "REFORGED" white, "Z" red.
 - **Scope:** both the React **client** and the Blade/AdminLTE **admin** area.
-- **Approach:** token remap + targeted edits (client) + override CSS (admin). Plays to each stack's strengths.
+- **Approach (revised):** ship a **new Blueprint extension** `reforgedz` that does all theming via injected CSS, and retire the existing `darkenate` + `nightadmin` theme extensions.
+
+## Why a Blueprint extension (not tailwind/source edits)
+
+Investigation found the panel's current dark look is **not** its Tailwind theme — it's the **`Darkenate`** Blueprint (client + admin) plus **`nightadmin`** (admin), which inject CSS override files (`client/client.style.css`, `admin/admin.style.css`) via Blade `<link>` tags. These use `!important` rules targeting Pterodactyl's classes — including build-hashed styled-component names (`.jZPsWO`, `.style-module_2Vp6MaXq`, …) and the stable `#logo` element. Because they override at the CSS layer, a `tailwind.config.js` remap would be repainted over by Darkenate. Therefore:
+
+- The cleanest path is our **own** CSS theme extension that supersedes them.
+- **No webpack rebuild / no client downtime** — theming is blade-injected CSS.
+- We reuse Darkenate as a proven base (it already solved login modal, xterm console, scrollbars, radii, per-tab backgrounds) and only swap the palette + add fonts + logo.
+- **Fragility:** CSS keyed to build-hashed classes is identical to the status quo; it only breaks if the React bundle is rebuilt (`yarn build` / `blueprint -build`), which would equally break Darkenate today. Accepted.
 
 ## Design tokens (ground truth from reforgedz.net)
 
 | Role | Value |
 |---|---|
 | Accent / primary | `#cc1f1f` (hover `#e02525`, dim `rgba(204,31,31,.12)`) |
-| Page bg | `#0c0c0c` |
-| Darkest (nav/header) | `#080808` |
+| Page bg | `#0c0c0c` · darkest (header/nav) `#080808` |
 | Surface (cards) | `#141414` · raised `#1c1c1c` |
 | Border | `rgba(255,255,255,.07)` (hover `.14`) |
 | Text | `#f0f0f0` → dim `#999` → ghost `#777` |
-| Online | `#2ecc71` |
+| Online | `#2ecc71` · offline `#cc1f1f` · starting amber (unchanged) |
 | Display font | Oswald (400/500/600/700) — headers, nav, buttons, server names |
 | Body font | Inter (300/400/500/600) |
-| Radius | 4px |
 
-## Workstream A — Client (React 16 + twin.macro/Tailwind 3 + styled-components, webpack 5)
+## The `reforgedz` extension
 
-Source: `/var/www/pterodactyl/resources/scripts`.
+`.blueprint` = a plain **zip** of:
+```
+conf.yml
+client/client.style.css     # client theme (recolored Darkenate base + fonts + logo)
+admin/admin.style.css       # admin theme (recolored Darkenate admin base)
+admin/view.blade.php        # admin head injection (fonts; logo if needed)
+assets/icon.jpg
+dev/.gitkeep
+LICENSE  README.md  thumbnail.jpg
+```
+`conf.yml` mirrors Darkenate's (`info` with `identifier: reforgedz`, `target: beta-2026-01`; `admin: {view, css}`; `dashboard: {css}`).
 
-1. **`tailwind.config.js` token remap** (carries ~80% of every screen automatically):
-   - Remap `gray`/`neutral` ramp so high indices = near-black surfaces (`900:#080808`, `800:#0c0c0c`, `700:#141414`, `600:#1c1c1c`, `500:~#2a2a2a`) and low indices = light text (`100:#ccc`, `200:#999`, `300:#777`).
-   - Point `primary` and `cyan` at a red ramp centered on `#cc1f1f` (hover `#e02525`).
-   - `fontFamily.header` → Oswald; default sans → Inter.
-2. **Fonts:** add Google Fonts `<link>` (Oswald + Inter) to the React wrapper template (`resources/views/templates/wrapper.blade.php` — verify exact file).
-3. **Targeted component edits:**
-   - `components/NavigationBar.tsx` → REFORGEDZ wordmark replacing the `{name}` text link.
-   - `components/elements/SubNavigation.tsx` → Oswald uppercase tabs, red active underline.
-   - `components/dashboard/ServerRow.tsx` → Tactical row look; green status bar; player count as hero metric.
-   - **Blueprint player-count addon** (under `.blueprint/`) → locate and restyle to match; ensure not clobbered by `blueprint -build`.
-4. **Build/deploy:** `cd /var/www/pterodactyl && yarn build:production` regenerates `public/assets/*.js`. The `clean` step deletes assets first → ~1–3 min of broken front-end → do in a low-traffic window.
+### Color transform (Darkenate navy → ReforgedZ)
+Copy Darkenate's two CSS files verbatim, then replace color values only:
 
-## Workstream B — Admin (Blade + AdminLTE/Bootstrap, no build)
+| Darkenate | ReforgedZ |
+|---|---|
+| `--background-color: #11111c` | `#0c0c0c` |
+| `--item-color: #1f212f` | `#141414` |
+| `--item-secondary-color: #2b2c39` | `#1c1c1c` |
+| main header `#0e0e17` | `#080808` |
+| subnav `#1f2129` | `#141414` |
+| **active underline `rgb(8,145,178)` (cyan)** | **`#cc1f1f` (red)** |
+| online row `#1f2033` / status `#2f994c` | `#141414` / keep green `#2ecc71` |
+| offline row `#331f2e` / status `#c23243` | `#1a1212` / `#cc1f1f` |
+| primary buttons `rgba(37,99,235)` (blue) + hover | `#cc1f1f` + `#e02525` |
+| scrollbar bg | `#0c0c0c` |
 
-Source: `resources/views/admin/*`, layout `resources/views/layouts/admin.blade.php`, CSS `public/themes/pterodactyl/css/`. Currently uses AdminLTE `skin-blue`.
+### Additions
+- **Fonts:** `@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');` at top of each CSS; `body{font-family:'Inter'}`, `a.font-header,.font-header{font-family:'Oswald'}`.
+- **REFORGEDZ logo (client, CSS-only):**
+  ```css
+  #logo a { font-size: 0; }
+  #logo a::before { content:"REFORGED"; color:#f0f0f0; }
+  #logo a::after  { content:"Z"; color:#cc1f1f; }
+  #logo a::before, #logo a::after { font-family:'Oswald'; font-weight:600; font-size:1.5rem; text-transform:uppercase; letter-spacing:.5px; }
+  ```
+- **SubNavigation tabs:** Oswald uppercase + letter-spacing on the sub-nav links; red active underline (covered by the cyan→red swap).
+- **Admin logo:** same two-tone treatment on the AdminLTE `.logo` (CSS pseudo-elements or `admin/view.blade.php` markup).
 
-1. **New file `public/themes/pterodactyl/css/rz-admin.css`**, loaded **last** in `admin.blade.php` head (after `pterodactyl.css`) so it overrides `skin-blue`:
-   - header/sidebar → `#080808`/`#0c0c0c`, red active/hover states + red active left-border.
-   - `.box` / `.box-primary` → dark surfaces, red top-border.
-   - `.btn-primary` → `#cc1f1f` (hover `#e02525`); links → red.
-   - `.table` → dark rows, subtle white borders.
-   - headings → Oswald; base text → Inter/`#ccc`.
-2. **`admin.blade.php`:** add Google Fonts `<link>`; restyle sidebar `.logo` to the REFORGEDZ wordmark. Keep `skin-blue` body class (override via CSS) to minimize Blade changes.
-3. **Deploy:** `php artisan view:clear`; respect `{cache-version}` asset param. Instant, **no downtime**.
+## Install / deploy
 
-## Logo
-
-REFORGEDZ, Oswald Semibold uppercase, "REFORGED" `#f0f0f0` + "Z" `#cc1f1f`. Applied to: client nav (component), admin sidebar header (CSS/markup), login screen (verify), and page `<title>`/favicon check.
-
-## Phasing
-
-1. **P1** — Client tokens + fonts + logo (shell). Rebuild. Biggest visual win.
-2. **P2** — Client component polish: ServerRow, SubNavigation, player-count addon, console.
-3. **P3** — Admin: `rz-admin.css` + layout + logo.
-4. **P4** — QA pass + fixes, both sides.
+1. Snapshot (`/root/panel-ui-backups/ui-snapshot-*.tar.gz`).
+2. Build `reforgedz.blueprint` (author files on server under `/root/reforgedz-theme/`, `zip -r`). Mirror files into the ticket-bot repo for version control.
+3. `cd /var/www/pterodactyl && blueprint -install reforgedz` (alias `-i`).
+4. `blueprint -remove darkenate` and `blueprint -remove nightadmin` so only ours themes the panel.
+5. `php artisan view:clear`; hard-refresh. **No webpack rebuild needed.**
 
 ## QA checklist
 
-Client: dashboard/server list, console, files, databases, settings, login/auth, modals.
-Admin: index, server view, nodes, users, nests/eggs, settings.
-Check: contrast/readability, active states, player count + status bar, logo in both areas, no leftover blue/cyan.
+Client: dashboard/server list (rows, player count green, status bar), console (xterm), files, databases, schedules, users, backups, network, startup, settings, activity, login. Admin: index, server view, nodes, users, nests/eggs, settings.
+Check: red accents/active states, REFORGEDZ logo both areas, fonts applied, no leftover navy/blue/cyan, player count + status colors intact.
 
 ## Rollback
 
-- Client: fresh `tar` snapshot of `resources/scripts` + `tailwind.config.js` + `public/assets` to `/root/panel-ui-backups/` before each phase (baseline already at `ui-snapshot-20260527-174501.tar.gz`). Restore = untar + `yarn build:production`.
-- Admin: `rz-admin.css` is one additive file; revert = remove it + its `<link>` + `view:clear`.
+`blueprint -remove reforgedz` then `blueprint -install darkenate` (and `nightadmin`) — packages retained in panel root. Plus the tar snapshot. `php artisan view:clear`.
 
 ## Risks
 
-- **Blueprint** woven into nav/sub-nav; source edits + tailwind config survive `blueprint -build` (they live in source). Locate the player-count extension before editing it.
-- **Build downtime** (client only) — schedule for low traffic.
-- **Caches** — webpack hashes bust client cache; admin needs `view:clear`.
+- **CSS keyed to build-hashed classes** — breaks only on a React rebuild; same as Darkenate today. If the panel is ever rebuilt, re-derive the hashes (or migrate theme into source then).
+- **`blueprint -install` side effects** — verify install doesn't trigger an unexpected `yarn build`; if it does, treat as one scheduled rebuild (low-traffic window).
+- **`playerlisting` extension** owns the player-count feature (it patched `ServerRow.tsx`); we only recolor its output, don't touch it.
