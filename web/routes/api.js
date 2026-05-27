@@ -2,6 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
 const { requireApiKey, requireRead, requireStats, hasRestrictedAccess } = require("../middleware/auth");
+const authAudit = require("../lib/authAudit");
 
 const router = express.Router();
 
@@ -83,6 +84,15 @@ router.get("/transcript/:id", (req, res) => {
 		return res.status(401).json({ error: "Restricted transcript — requires Access Restricted Transcripts permission" });
 	}
 
+	// Record the view for logged-in admins (public share-link views, where
+	// there's no rzUser session, are not audited).
+	authAudit.auditView(req, "view.transcript", `transcript:${row.id}`, {
+		ticketId: row.ticket_id,
+		channelName: row.channel_name,
+		targetName: row.created_by_name || null,
+		restricted: !!row.restricted
+	});
+
 	res.json({
 		id: row.id,
 		ticketId: row.ticket_id,
@@ -140,6 +150,9 @@ function mapListRow(r) {
 router.get("/tickets", requireRead, (req, res) => {
 	const { search, page = 1, limit = 50, showAutoClosed, showRestricted } = req.query;
 	const offset = (parseInt(page) - 1) * parseInt(limit);
+
+	// Audit the admin table browse (deduped; search term in detail).
+	authAudit.auditView(req, "view.transcriptsTable", search ? `search` : "browse", { search: search || undefined });
 
 	const canSeeRestricted = hasRestrictedAccess(req);
 	const includeRestricted = canSeeRestricted && (showRestricted !== "0" && showRestricted !== "false");
