@@ -188,6 +188,51 @@
 			]
 		},
 		{
+			"codeName": "eu3-support",
+			"name": "EU3 Support",
+			"description": "Support for EU3 server issues",
+			"emoji": "🇪🇺",
+			"color": "",
+			"categoryId": "1513347589054005420",
+			"ticketNameOption": "eu3-TICKETCOUNT-USERNAME",
+			"customDescription": "**EU3 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
+			"cantAccess": [],
+			"askQuestions": true,
+			"staffRoles": ["1458642423889662048", "1360329397415972926", "1499237259109601363"],
+			"questions": [
+				{
+					"label": "Your In-Game Name",
+					"placeholder": "Enter your in-game name",
+					"style": "SHORT",
+					"maxLength": 100
+				},
+				{
+					"label": "Your Arma Reforger UID",
+					"placeholder": "Main Menu > Profile, format: 0000-000000-0000",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Base Coords (If applicable)",
+					"placeholder": "e.g. 122, 73 - type N/A if not applicable",
+					"style": "SHORT",
+					"maxLength": 50
+				},
+				{
+					"label": "Time the Incident Occurred",
+					"placeholder": "e.g. 2026-04-11 14:30 UTC",
+					"style": "SHORT",
+					"maxLength": 200
+				},
+				{
+					"label": "Description of the Incident",
+					"placeholder": "Describe what happened in detail",
+					"style": "PARAGRAPH",
+					"maxLength": 4000
+				}
+			]
+		},
+		{
 			"codeName": "ban-appeal",
 			"name": "Ban Appeal",
 			"description": "Appeal a ban on any server",
@@ -351,10 +396,10 @@
 					"maxLength": 200
 				},
 				{
-					"label": "Date Purchased",
-					"placeholder": "e.g. 2026-04-11",
+					"label": "Transaction ID",
+					"placeholder": "Check your email for the transaction ID, if you do not know it, provide the name on the card or PayPal account used for the purchase",
 					"style": "SHORT",
-					"maxLength": 50
+					"maxLength": 20
 				},
 				{
 					"label": "Describe your issue",
