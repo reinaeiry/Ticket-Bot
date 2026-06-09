@@ -385,7 +385,7 @@
 			"questions": [
 				{
 					"label": "Name",
-					"placeholder": "Your name",
+					"placeholder": "Your Legal Name",
 					"style": "SHORT",
 					"maxLength": 100
 				},
@@ -397,7 +397,7 @@
 				},
 				{
 					"label": "Transaction ID",
-					"placeholder": "Check your email for the transaction ID, or provide the card or PayPal name used",
+					"placeholder": "Check your email for the transaction ID",
 					"style": "SHORT",
 					"maxLength": 20
 				},
