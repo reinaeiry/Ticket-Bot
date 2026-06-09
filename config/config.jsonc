@@ -397,7 +397,7 @@
 				},
 				{
 					"label": "Transaction ID",
-					"placeholder": "Check your email for the transaction ID, if you do not know it, provide the name on the card or PayPal account used for the purchase",
+					"placeholder": "Check your email for the transaction ID, or provide the card or PayPal name used",
 					"style": "SHORT",
 					"maxLength": 20
 				},
