@@ -66,11 +66,32 @@ const AC_UID = /UID:\s*([0-9a-f-]{36})/i;
 const AC_POS = /Pos:\s*\[([^\]]+)\]/;
 const AC_SERVER_INIT = /Anti-cheat system initialized on ReforgedZ\s+(\S+)/;
 
+// Server prefix added ~2026-05: "[ReforgedZ NA1] <t:UNIX:T> [SEVERITY] ...".
+// Older lines led straight with the time tag: "<t:UNIX:T> [SEVERITY] ...".
+const AC_SERVER_PREFIX = /^\[ReforgedZ\s+([^\]]+)\]\s*/;
+
 function parseAnticheat(text, messageMs, mapping) {
 	const out = [];
 	for (const rawLine of splitLines(text)) {
-		const { tsMs, rest } = takeTs(rawLine, messageMs);
-		const m = AC_HEAD.exec(rest);
+		let line = rawLine;
+
+		// Optional "[ReforgedZ NA1]" prefix -> precise server (NA1/NA2/EU1/EU2).
+		let server = mapping.server || null;
+		const sm = line.match(AC_SERVER_PREFIX);
+		if (sm) {
+			server = sm[1].trim();
+			line = line.slice(sm[0].length);
+		}
+
+		// Timestamp tag may now be inline (after the prefix) rather than leading.
+		let tsMs = messageMs;
+		const tm = line.match(/<t:(\d+):[tTfFRD]>/);
+		if (tm) {
+			tsMs = parseInt(tm[1], 10) * 1000;
+			line = (line.slice(0, tm.index) + line.slice(tm.index + tm[0].length)).replace(/\s+/g, " ").trim();
+		}
+
+		const m = AC_HEAD.exec(line);
 		if (!m) continue;
 		const [, severity, body] = m;
 
@@ -79,7 +100,7 @@ function parseAnticheat(text, messageMs, mapping) {
 			out.push({
 				log_type: "anticheat",
 				ts_ms: tsMs,
-				server: init[1] || mapping.server || null,
+				server: init[1] || server || null,
 				severity,
 				category: "System Init",
 				player_name: null,
@@ -111,7 +132,7 @@ function parseAnticheat(text, messageMs, mapping) {
 		out.push({
 			log_type: "anticheat",
 			ts_ms: tsMs,
-			server: mapping.server || null,
+			server: server || null,
 			severity,
 			category,
 			player_name: playerMatch ? playerMatch[1].trim() : null,
