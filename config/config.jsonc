@@ -243,7 +243,7 @@
 			"customDescription": "**Ban Appeal**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Server Banned From:** REASON3\n**Reason for Unban:** REASON4\n**Additional Context:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1458642423889662048"],
+			"staffRoles": ["1360329397415972926", "1458642423889662048","1528497635168751797"],
 			"blockedRoles": ["1352368542191714456"],
 			"questions": [
 				{
