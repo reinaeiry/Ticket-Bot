@@ -110,7 +110,6 @@ export default class ReadyEvent extends BaseEvent {
 
 
 		await this.client.loadRuntimeConfig();
-		await resumePendingDeletes(this.client);
 
 		this.setStatus();
 		setInterval(()=>this.setStatus(), 9e5); // 15 minutes
@@ -123,6 +122,12 @@ export default class ReadyEvent extends BaseEvent {
 		// admin Tickets relay routes can fetch channels and send messages.
 		clientHolder.setClient(this.client);
 		clientHolder.setPrisma(this.client.prisma);
+
+		// Fire-and-forget — this walks every closed ticket in the database and
+		// REST-fetches its channel, which for a table this size is tens of minutes
+		// of rate-limited 404s. Awaiting it inline blocked command registration and
+		// the admin relay handover above for the whole boot.
+		resumePendingDeletes(this.client).catch((err) => console.error("[pendingDeletes] resume failed:", err));
 
 		// Fire-and-forget — game-log backfill runs sequentially with paced
 		// fetches so it can take a couple minutes; we don't want it blocking
