@@ -18,6 +18,7 @@ import CloseCategoryCommand from "./closecategory";
 import DevAppCategoryOpenCommand from "./devappcategoryopen";
 import SyncPermsCommand from "./syncperms";
 import BlanketAssignRoleCommand from "./blanketassignrole";
+import AddSurvivorsCommand from "./addsurvivors";
 
 export {
 	AddCommand,
@@ -40,4 +41,5 @@ export {
 	DevAppCategoryOpenCommand,
 	SyncPermsCommand,
 	BlanketAssignRoleCommand,
+	AddSurvivorsCommand,
 };
