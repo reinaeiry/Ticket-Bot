@@ -3,6 +3,7 @@ import {
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
+	ChatInputCommandInteraction,
 	CommandInteraction,
 	ComponentType,
 	GuildMember,
@@ -22,10 +23,20 @@ const INTERACTION_WINDOW_MS = 14 * 60 * 1000;
 const CHANNEL_PROGRESS_MS = 15 * 60 * 1000;
 const PROGRESS_EVERY = 100;
 
+// Module-level, so they are shared by every invocation in this process. Without
+// the guard the command can be fired repeatedly and each call starts its own
+// independent multi-hour loop, all competing for the same rate limit bucket and
+// each posting its own progress messages. That is exactly what happened: eight
+// concurrent runs, with no way to end them short of restarting the bot.
+let running = false;
+let cancelRequested = false;
+
 export default class AddSurvivorsCommand extends BaseCommand {
-	public static data = new SlashCommandBuilder()
+	public static data = <SlashCommandBuilder>new SlashCommandBuilder()
 		.setName("addsurvivors")
-		.setDescription("Give the Survivor role to every member who doesn't already have it") as SlashCommandBuilder;
+		.setDescription("Give the Survivor role to every member who doesn't already have it")
+		.addBooleanOption((o) =>
+			o.setName("stop").setDescription("Ask the run that is currently in progress to end"));
 
 	constructor(client: ExtendedClient) {
 		super(client);
@@ -38,6 +49,25 @@ export default class AddSurvivorsCommand extends BaseCommand {
 		}
 		const guild = interaction.guild;
 		if (!guild) return interaction.reply({ content: "Guild only.", ephemeral: true });
+
+		const wantsStop = (interaction as ChatInputCommandInteraction).options.getBoolean("stop") ?? false;
+		if (wantsStop) {
+			if (!running) {
+				return interaction.reply({ content: "No run is in progress.", ephemeral: true });
+			}
+			cancelRequested = true;
+			return interaction.reply({
+				content: "Stop requested — the run will end after the member it is on.",
+				ephemeral: true,
+			});
+		}
+
+		if (running) {
+			return interaction.reply({
+				content: "A run is already in progress. Use `/addsurvivors stop:true` to end it.",
+				ephemeral: true,
+			});
+		}
 
 		const role = guild.roles.cache.get(SURVIVOR_ROLE) ?? (await guild.roles.fetch(SURVIVOR_ROLE).catch(() => null));
 		if (!role) return interaction.reply({ content: `Role \`${SURVIVOR_ROLE}\` was not found in this guild.`, ephemeral: true });
@@ -96,6 +126,8 @@ export default class AddSurvivorsCommand extends BaseCommand {
 		await press.deferUpdate().catch((e) => console.log("addsurvivors deferUpdate:", e));
 		await interaction.editReply({ content: `Assigning **${role.name}** to ${targets.size} members…`, components: [] });
 
+		running = true;
+		cancelRequested = false;
 		const startedAt = Date.now();
 		let assigned = 0;
 		let skipped = 0;
@@ -115,32 +147,39 @@ export default class AddSurvivorsCommand extends BaseCommand {
 				.catch((e) => console.log("addsurvivors channel report:", e));
 		};
 
-		for (const m of targets.values()) {
-			processed++;
+		try {
+			for (const m of targets.values()) {
+				if (cancelRequested) break;
+				processed++;
 
-			// A member may have picked the role up by other means since the fetch.
-			if (m.roles.cache.has(SURVIVOR_ROLE)) {
-				skipped++;
-			} else {
-				try {
-					await m.roles.add(SURVIVOR_ROLE, `/addsurvivors by ${interaction.user.tag}`);
-					assigned++;
-				} catch (e) {
-					failed++;
-					console.log(`addsurvivors failed for ${m.id}:`, e);
+				// A member may have picked the role up by other means since the fetch.
+				if (m.roles.cache.has(SURVIVOR_ROLE)) {
+					skipped++;
+				} else {
+					try {
+						await m.roles.add(SURVIVOR_ROLE, `/addsurvivors by ${interaction.user.tag}`);
+						assigned++;
+					} catch (e) {
+						failed++;
+						console.log(`addsurvivors failed for ${m.id}:`, e);
+					}
+				}
+
+				if (processed % PROGRESS_EVERY === 0) {
+					await report(
+						`Assigning **${role.name}**… ${processed}/${targets.size} processed, ${assigned} added, ${failed} failed.`,
+					);
 				}
 			}
-
-			if (processed % PROGRESS_EVERY === 0) {
-				await report(
-					`Assigning **${role.name}**… ${processed}/${targets.size} processed, ${assigned} added, ${failed} failed.`,
-				);
-			}
+		} finally {
+			running = false;
 		}
 
 		await report(
-			`Done. Added **${role.name}** to **${assigned}** member(s). Already had it: ${skipped}. Failed: ${failed}. Processed: ${processed}/${targets.size}.`,
+			`${cancelRequested ? "Ended early." : "Done."} Added **${role.name}** to **${assigned}** member(s). `
+			+ `Already had it: ${skipped}. Failed: ${failed}. Processed: ${processed}/${targets.size}.`,
 			true,
 		);
+		cancelRequested = false;
 	}
 }
