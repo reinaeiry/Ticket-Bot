@@ -107,13 +107,15 @@ export const createTicket = async (
 		// Role Access Stuff
 		if (client.config.rolesWhoHaveAccessToTheTickets.length > 0 || (ticketType.staffRoles?.length ?? 0) > 0) {
 			for (const role of [...client.config.rolesWhoHaveAccessToTheTickets, ...(ticketType.staffRoles ?? [])])
-				await channel.permissionOverwrites.edit(role, {
-					SendMessages: true,
-					AddReactions: true,
-					ReadMessageHistory: true,
-					AttachFiles: true,
-					ViewChannel: true
-				});
+				await channel.permissionOverwrites
+					.edit(role, {
+						SendMessages: true,
+						AddReactions: true,
+						ReadMessageHistory: true,
+						AttachFiles: true,
+						ViewChannel: true
+					})
+					.catch((e) => console.log(`createTicket staff role ${role}:`, e));
 		}
 
 		for (const role of ticketType.blockedRoles ?? []) {
