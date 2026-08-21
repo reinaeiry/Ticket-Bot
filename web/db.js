@@ -49,6 +49,25 @@ if (!hasCol("auto_closed")) db.exec(`ALTER TABLE transcripts ADD COLUMN auto_clo
 if (!hasCol("restricted")) db.exec(`ALTER TABLE transcripts ADD COLUMN restricted INTEGER DEFAULT 0`);
 if (!hasCol("guid")) db.exec(`ALTER TABLE transcripts ADD COLUMN guid TEXT`);
 if (!hasCol("created_by_avatar")) db.exec(`ALTER TABLE transcripts ADD COLUMN created_by_avatar TEXT`);
+if (!hasCol("category_code")) {
+  // Per-category access control on the archive needs the machine codeName, not the
+  // display name. Backfill from `category` so historic rows are gated too — a
+  // restricted row whose code we cannot resolve fails CLOSED (see routes/api.js).
+  db.exec(`ALTER TABLE transcripts ADD COLUMN category_code TEXT`);
+  const { NAME_TO_CODE } = require("./lib/ticketCategories");
+  const upd = db.prepare(`UPDATE transcripts SET category_code = ? WHERE category = ? AND category_code IS NULL`);
+  const tx = db.transaction(() => {
+    for (const name of Object.keys(NAME_TO_CODE)) upd.run(NAME_TO_CODE[name], name);
+    // Shop and Management use distinctive channel prefixes; use them to catch rows
+    // whose display name was since renamed in config.
+    db.prepare(`UPDATE transcripts SET category_code = 'shop-support' WHERE category_code IS NULL AND channel_name LIKE 'shop-%'`).run();
+    db.prepare(`UPDATE transcripts SET category_code = 'contact-management' WHERE category_code IS NULL AND channel_name LIKE 'mgmt-%'`).run();
+  });
+  tx();
+  const left = db.prepare(`SELECT COUNT(*) c FROM transcripts WHERE category_code IS NULL AND restricted = 1`).get().c;
+  console.log(`[transcripts] category_code backfilled; ${left} restricted row(s) still unresolved (these fail closed)`);
+}
+db.exec(`CREATE INDEX IF NOT EXISTS idx_transcripts_category_code ON transcripts(category_code)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_transcripts_guid ON transcripts(guid)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_transcripts_created_by ON transcripts(created_by)`);
 

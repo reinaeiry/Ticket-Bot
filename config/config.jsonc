@@ -243,7 +243,7 @@
 			"customDescription": "**Ban Appeal**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Server Banned From:** REASON3\n**Reason for Unban:** REASON4\n**Additional Context:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1538972242942107738", "1538973632288530483"],
+			"staffRoles": ["1360329397415972926", "1518411617187135518", "1538968143131578408", "1538972242942107738"],
 			"blockedRoles": ["1497062984848248983", "1497064031259984033", "1499237354324492378", "1497061513175765003", "1497062741125627935", "1499237259109601363"],
 			"questions": [
 				{
@@ -289,7 +289,7 @@
 			"customDescription": "**Gamemaster Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Prior Experience:** REASON3\n**Hours on Server:** REASON4\n**Servers:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1538972242942107738", "1538973632288530483"],
+			"staffRoles": ["1360329397415972926", "1518411617187135518", "1538968143131578408", "1538972242942107738"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -334,7 +334,7 @@
 			"customDescription": "**Developer Application**\nApplicant: <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Enfusion Tools Experience:** REASON3\n**Creative Software Experience:** REASON4\n**What can you contribute?** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1538972242942107738", "1538973632288530483"],
+			"staffRoles": ["1360329397415972926", "1518411617187135518"],
 			"blockedRoles": ["1497062984848248983", "1497064031259984033", "1499237354324492378", "1497061513175765003", "1497062741125627935", "1499237259109601363"],
 			"questions": [
 				{
@@ -420,7 +420,7 @@
 			"customDescription": "**Contact Management**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**GUID:** REASON2\n**Description:** REASON3",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926"],
+			"staffRoles": ["1360329397415972926", "1538968143131578408", "1518411617187135518"],
 			"blockedRoles": ["1497062984848248983", "1497064031259984033", "1499237354324492378", "1497061513175765003", "1497062741125627935", "1499237259109601363"],
 			"questions": [
 				{

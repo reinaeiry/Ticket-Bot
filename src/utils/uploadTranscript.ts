@@ -7,6 +7,8 @@ export type TranscriptUploadInput = {
 	ticketId: number;
 	channel: TextChannel;
 	category: string;
+	/** TicketType.codeName — the machine key the archive gates access on. */
+	categoryCode?: string;
 	createdBy: string;
 	createdByName: string;
 	closedBy: string;
@@ -78,6 +80,7 @@ export async function uploadTranscript(input: TranscriptUploadInput): Promise<st
 				ticketId: input.ticketId,
 				channelName: input.channel.name,
 				category: input.category,
+				categoryCode: input.categoryCode || null,
 				createdBy: input.createdBy,
 				createdByName: input.createdByName,
 				closedBy: input.closedBy,

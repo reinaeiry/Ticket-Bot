@@ -1,7 +1,8 @@
 const express = require("express");
 const crypto = require("crypto");
 const db = require("../db");
-const { requireApiKey, requireRead, requireStats, hasRestrictedAccess } = require("../middleware/auth");
+const { requireApiKey, requireRead, requireStats, hasRestrictedAccess, canSeeCategory, allowedRestrictedCodes } = require("../middleware/auth");
+const { codeForCategoryName } = require("../lib/ticketCategories");
 const authAudit = require("../lib/authAudit");
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.post("/upload", requireApiKey, (req, res) => {
 			autoClosed,
 			restricted,
 			guid,
+			categoryCode,
 		} = req.body;
 
 		const id = crypto.randomUUID();
@@ -41,13 +43,16 @@ router.post("/upload", requireApiKey, (req, res) => {
 		}
 
 		db.prepare(`
-			INSERT INTO transcripts (id, ticket_id, channel_name, category, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages, auto_closed, restricted, guid, created_by_avatar)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			INSERT INTO transcripts (id, ticket_id, channel_name, category, category_code, created_by, created_by_name, closed_by, closed_by_name, close_reason, closed_at, message_count, messages, auto_closed, restricted, guid, created_by_avatar)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`).run(
 			id,
 			ticketId || null,
 			channelName || null,
 			category || null,
+			// Prefer the code the bot sent; fall back to resolving the display name so a
+			// bot running older code still produces gate-able rows.
+			(typeof categoryCode === "string" && categoryCode.trim()) ? categoryCode.trim() : codeForCategoryName(category),
 			createdBy || null,
 			createdByName || null,
 			closedBy || null,
@@ -80,8 +85,10 @@ router.get("/transcript/:id", (req, res) => {
 		return res.status(403).json({ error: "Auto-closed tickets have no transcript" });
 	}
 
-	if (row.restricted && !hasRestrictedAccess(req)) {
-		return res.status(401).json({ error: "Restricted transcript — requires Access Restricted Transcripts permission" });
+	// Restricted transcripts are gated per CATEGORY, not by one blanket flag —
+	// see canSeeCategory() in middleware/auth.js.
+	if (row.restricted && !canSeeCategory(req, row.category_code)) {
+		return res.status(401).json({ error: "Restricted transcript — you do not have access to this ticket category" });
 	}
 
 	// Record the view for logged-in admins (public share-link views, where
@@ -111,11 +118,23 @@ router.get("/transcript/:id", (req, res) => {
 	});
 });
 
-function buildListQuery({ search, includeAutoClosed, includeRestricted }) {
+function buildListQuery({ search, includeAutoClosed, includeRestricted, allowedCodes }) {
 	const clauses = [];
 	const params = [];
 
-	if (!includeRestricted) clauses.push("(restricted = 0 OR restricted IS NULL)");
+	if (!includeRestricted) {
+		clauses.push("(restricted = 0 OR restricted IS NULL)");
+	} else if (Array.isArray(allowedCodes)) {
+		// Show unrestricted rows, plus restricted rows only in the categories this
+		// caller is cleared for. An empty allow-list therefore hides every
+		// restricted row rather than showing all of them.
+		if (allowedCodes.length === 0) {
+			clauses.push("(restricted = 0 OR restricted IS NULL)");
+		} else {
+			clauses.push(`((restricted = 0 OR restricted IS NULL) OR category_code IN (${allowedCodes.map(() => "?").join(",")}))`);
+			params.push(...allowedCodes);
+		}
+	}
 	if (!includeAutoClosed) clauses.push("(auto_closed = 0 OR auto_closed IS NULL)");
 
 	if (search && search.trim()) {
@@ -154,13 +173,15 @@ router.get("/tickets", requireRead, (req, res) => {
 	// Audit the admin table browse (deduped; search term in detail).
 	authAudit.auditView(req, "view.transcriptsTable", search ? `search` : "browse", { search: search || undefined });
 
-	const canSeeRestricted = hasRestrictedAccess(req);
+	const allowedCodes = allowedRestrictedCodes(req);
+	const canSeeRestricted = allowedCodes.length > 0;
 	const includeRestricted = canSeeRestricted && (showRestricted !== "0" && showRestricted !== "false");
 
 	const { where, params } = buildListQuery({
 		search,
 		includeAutoClosed: showAutoClosed === "1" || showAutoClosed === "true",
 		includeRestricted,
+		allowedCodes,
 	});
 
 	const countRow = db.prepare(`SELECT COUNT(*) as total FROM transcripts ${where}`).get(...params);
@@ -185,11 +206,17 @@ router.get("/tickets", requireRead, (req, res) => {
 // only counted if the caller also has transcripts.restricted.
 router.get("/stats/staff", requireStats, (req, res) => {
 	const since = parseInt(req.query.since, 10) || 0;
-	const canSeeRestricted = hasRestrictedAccess(req);
+	const allowedCodes = allowedRestrictedCodes(req);
+	const canSeeRestricted = allowedCodes.length > 0;
 
 	const clauses = ["closed_by_name IS NOT NULL", "TRIM(closed_by_name) != ''", "(auto_closed = 0 OR auto_closed IS NULL)"];
 	const params = [];
-	if (!canSeeRestricted) clauses.push("(restricted = 0 OR restricted IS NULL)");
+	if (!canSeeRestricted) {
+		clauses.push("(restricted = 0 OR restricted IS NULL)");
+	} else {
+		clauses.push(`((restricted = 0 OR restricted IS NULL) OR category_code IN (${allowedCodes.map(() => "?").join(",")}))`);
+		params.push(...allowedCodes);
+	}
 	if (since > 0) {
 		clauses.push("closed_at >= ?");
 		params.push(since);

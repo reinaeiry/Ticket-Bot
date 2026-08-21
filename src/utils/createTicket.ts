@@ -105,8 +105,15 @@ export const createTicket = async (
 			.catch((e) => console.log(e));
 
 		// Role Access Stuff
-		if (client.config.rolesWhoHaveAccessToTheTickets.length > 0 || (ticketType.staffRoles?.length ?? 0) > 0) {
-			for (const role of [...client.config.rolesWhoHaveAccessToTheTickets, ...(ticketType.staffRoles ?? [])])
+		//
+		// `staffRoles` is the COMPLETE, authoritative list of roles that may see this
+		// ticket type. Do NOT union in `rolesWhoHaveAccessToTheTickets` here: that list is
+		// overwritten at boot from the SQLite `staff_role` key (ExtendedClient), so doing so
+		// silently granted one global role — Global Admin — visibility on every panel,
+		// including Founder-only Shop Support and Contact Management. It stays in use for
+		// *command* gating (who may close), which is a separate question from who may look.
+		if ((ticketType.staffRoles?.length ?? 0) > 0) {
+			for (const role of ticketType.staffRoles ?? [])
 				await channel.permissionOverwrites
 					.edit(role, {
 						SendMessages: true,

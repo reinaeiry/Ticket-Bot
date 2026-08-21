@@ -1,4 +1,5 @@
 const makeRzAuth = require("../lib/rz-auth");
+const { permKeyForCode, RESTRICTED_CODES } = require("../lib/ticketCategories");
 
 const AUTH_BASE = process.env.AUTH_BASE || "https://auth.reforgedz.net";
 const COOKIE_NAME = process.env.COOKIE_NAME || "rz_session";
@@ -36,6 +37,40 @@ function hasRestrictedAccess(req) {
 	return !!(req.rzUser && req.rzUser.perms?.transcripts?.restricted);
 }
 
+// Per-category gate for the archive.
+//
+// The old model was a single `transcripts.restricted` boolean covering FIVE
+// categories at once (ban appeals, dev/GM applications, shop, management), so
+// anyone who needed ban-appeal transcripts silently got shop and management too.
+// The per-category grid already existed and already gated the live relay on
+// admin.reforgedz.net — this makes the archive consult the same source of truth.
+//
+// Fails CLOSED: a restricted row whose category cannot be resolved to a perm key
+// falls back to the coarse `transcripts.restricted` flag rather than being shown.
+// Deliberately requires BOTH switches:
+//   transcripts.restricted  — master "may see sensitive transcripts at all"
+//   tickets.<category>      — which of them, same grid the live relay uses
+//
+// Requiring both means this change can only ever NARROW access. Gating on the
+// category alone would have silently GRANTED archive access to anyone holding a
+// category for the live relay but not the restricted flag (e.g. a Regional Admin
+// with tickets.gmApplications would have gained 75 GM-application transcripts).
+// Widening access is not something a fix for an over-sharing bug should ever do.
+function canSeeCategory(req, codeName) {
+	if (!req.rzUser) return false;
+	if (!hasRestrictedAccess(req)) return false;
+	const permKey = permKeyForCode(codeName);
+	// Unknown/unmapped category on a restricted row — fall back to the master flag.
+	if (!permKey) return true;
+	return req.rzUser.perms?.tickets?.[permKey] === true;
+}
+
+// Which restricted categories may this caller see? Used to build list queries.
+function allowedRestrictedCodes(req) {
+	if (!req.rzUser) return [];
+	return RESTRICTED_CODES.filter((code) => canSeeCategory(req, code));
+}
+
 function requireApiKey(req, res, next) {
 	const key = req.headers["x-api-key"] || req.query.key;
 	if (!key || key !== process.env.API_KEY) {
@@ -50,6 +85,8 @@ module.exports = {
 	requireRead,
 	requireStats,
 	hasRestrictedAccess,
+	canSeeCategory,
+	allowedRestrictedCodes,
 	requireApiKey,
 	// Back-compat alias for any caller still importing requireAuth.
 	requireAuth: requireRead

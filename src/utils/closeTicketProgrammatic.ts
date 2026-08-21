@@ -2,6 +2,8 @@ import { ChannelType, GuildMember, TextChannel } from "discord.js";
 import { ExtendedClient, TicketType } from "../structure";
 import { log } from "./logs";
 import { uploadTranscript } from "./uploadTranscript";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { isRestrictedCode } = require("../../web/lib/ticketCategories");
 
 function normalizeName(s: string): string {
 	return s.toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -117,12 +119,8 @@ export async function closeTicketProgrammatic(
 	}
 
 	let transcriptUrl = "";
-	const isRestricted =
-		ticketType?.codeName === "ban-appeal" ||
-		ticketType?.codeName === "dev-application" ||
-		ticketType?.codeName === "gm-application" ||
-		ticketType?.codeName === "shop-support" ||
-		ticketType?.codeName === "contact-management";
+	// Single source of truth, shared with the archive's per-category gate.
+	const isRestricted = isRestrictedCode(ticketType?.codeName);
 
 	if (client.config.closeOption.createTranscript) {
 		try {
@@ -131,6 +129,7 @@ export async function closeTicketProgrammatic(
 				ticketId: ticket.id,
 				channel,
 				category: ticketType?.name || "Unknown",
+				categoryCode: ticketType?.codeName,
 				createdBy: creator,
 				createdByName: creatorUser?.tag || creator,
 				closedBy: closerId,
