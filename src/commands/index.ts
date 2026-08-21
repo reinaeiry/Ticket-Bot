@@ -19,6 +19,7 @@ import DevAppCategoryOpenCommand from "./devappcategoryopen";
 import SyncPermsCommand from "./syncperms";
 import BlanketAssignRoleCommand from "./blanketassignrole";
 import AddSurvivorsCommand from "./addsurvivors";
+import BillingCommand from "./billing";
 
 export {
 	AddCommand,
@@ -42,4 +43,5 @@ export {
 	SyncPermsCommand,
 	BlanketAssignRoleCommand,
 	AddSurvivorsCommand,
+	BillingCommand,
 };
