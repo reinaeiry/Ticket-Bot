@@ -1,4 +1,5 @@
 import { BaseCommand, ExtendedClient } from "../structure";
+import { hasPanelAccess } from "../utils/staffGate";
 import {
 	ChatInputCommandInteraction,
 	CommandInteraction,
@@ -44,10 +45,10 @@ export default class RelinkCommand extends BaseCommand {
 
 	async execute(interaction: CommandInteraction): Promise<void> {
 		const member = interaction.member as GuildMember | null;
-		const isStaff = member?.roles.cache.some((r) =>
-			this.client.config.rolesWhoHaveAccessToTheTickets.includes(r.id)
-		);
-		if (!isStaff) {
+		// Gated to whoever handles Shop Support, since that is where a re-link
+		// request arrives. NOT the global staff role alone -- that resolves to
+		// Global Admin and would refuse the Founder.
+		if (!hasPanelAccess(this.client, member, "shop-support")) {
 			await interaction.reply({
 				content: "You do not have permission to use this command.",
 				ephemeral: true,

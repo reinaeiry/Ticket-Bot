@@ -1,4 +1,5 @@
 import { BaseCommand, ExtendedClient } from "../structure";
+import { hasPanelAccess } from "../utils/staffGate";
 import {
 	ChatInputCommandInteraction,
 	CommandInteraction,
@@ -86,10 +87,10 @@ export default class BillingCommand extends BaseCommand {
 
 	async execute(interaction: CommandInteraction): Promise<void> {
 		const member = interaction.member as GuildMember | null;
-		const isStaff = member?.roles.cache.some((r) =>
-			this.client.config.rolesWhoHaveAccessToTheTickets.includes(r.id)
-		);
-		if (!isStaff) {
+		// Same gate as /relink: the global staff role alone resolves to Global
+		// Admin, which refused the Founder -- the one person who handles payment
+		// tickets personally.
+		if (!hasPanelAccess(this.client, member, "shop-support")) {
 			await interaction.reply({
 				content: "You do not have permission to use this command.",
 				ephemeral: true,
