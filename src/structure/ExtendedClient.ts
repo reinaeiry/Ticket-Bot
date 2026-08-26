@@ -8,7 +8,7 @@ import {
 	Na1CategoryOpenCommand, Na2CategoryOpenCommand, Eu1CategoryOpenCommand, Eu2CategoryOpenCommand,
 	BanAppealCategoryOpenCommand, ClaimedCategoryCommand, SetRoleCommand, SetClosedDelayCommand,
 	GmAppCategoryOpenCommand, CloseCategoryCommand, DevAppCategoryOpenCommand, SyncPermsCommand,
-	BlanketAssignRoleCommand, AddSurvivorsCommand, BillingCommand,
+	BlanketAssignRoleCommand, AddSurvivorsCommand, BillingCommand, RelinkCommand,
 } from "../commands";
 import {InteractionCreateEvent, ReadyEvent, MessageCreateEvent, MessageUpdateEvent, MessageDeleteEvent} from "../events";
 import {jsonc} from "jsonc";
@@ -53,6 +53,7 @@ export default class ExtendedClient extends Client {
 			[BlanketAssignRoleCommand.data.name, new BlanketAssignRoleCommand(this)],
 			[AddSurvivorsCommand.data.name, new AddSurvivorsCommand(this)],
 			[BillingCommand.data.name, new BillingCommand(this)],
+			[RelinkCommand.data.name, new RelinkCommand(this)],
 		]);
 		this.loadEvents();
 
@@ -144,6 +145,7 @@ export default class ExtendedClient extends Client {
 			BlanketAssignRoleCommand.data.toJSON(),
 			AddSurvivorsCommand.data.toJSON(),
 			BillingCommand.data.toJSON(),
+			RelinkCommand.data.toJSON(),
 		];
 
 		const { guildId } = jsonc.parse(fs.readFileSync(path.join(__dirname, "../../config/config.jsonc"), "utf8"));

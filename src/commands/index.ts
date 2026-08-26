@@ -20,6 +20,7 @@ import SyncPermsCommand from "./syncperms";
 import BlanketAssignRoleCommand from "./blanketassignrole";
 import AddSurvivorsCommand from "./addsurvivors";
 import BillingCommand from "./billing";
+import RelinkCommand from "./relink";
 
 export {
 	AddCommand,
@@ -44,4 +45,5 @@ export {
 	BlanketAssignRoleCommand,
 	AddSurvivorsCommand,
 	BillingCommand,
+	RelinkCommand,
 };
