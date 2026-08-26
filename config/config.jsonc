@@ -18,7 +18,7 @@
 			"customDescription": "**NA1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1538972242942107738", "1538973632288530483", "1497062984848248983"],
+			"staffRoles": ["1360329397415972926", "1497062984848248983", "1538973632288530483"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -63,7 +63,7 @@
 			"customDescription": "**NA2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1538972242942107738", "1538973632288530483", "1497064031259984033"],
+			"staffRoles": ["1360329397415972926", "1497064031259984033", "1538973632288530483"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -108,7 +108,7 @@
 			"customDescription": "**EU1 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1538972242942107738", "1538973632288530483", "1497061513175765003"],
+			"staffRoles": ["1360329397415972926", "1497061513175765003", "1538973632288530483"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -153,7 +153,7 @@
 			"customDescription": "**EU2 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1538972242942107738", "1538973632288530483", "1497062741125627935"],
+			"staffRoles": ["1360329397415972926", "1497062741125627935", "1538973632288530483"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -198,7 +198,7 @@
 			"customDescription": "**EU3 Support Ticket**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**Arma Reforger UID:** REASON2\n**Base Coords:** REASON3\n**Time of Incident:** REASON4\n**Description:** REASON5",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1538968143131578408", "1538972242942107738", "1538973632288530483", "1360329397415972926", "1499237259109601363"],
+			"staffRoles": ["1360329397415972926", "1499237259109601363", "1538973632288530483"],
 			"questions": [
 				{
 					"label": "Your In-Game Name",
@@ -420,7 +420,7 @@
 			"customDescription": "**Contact Management**\nOpened by <@USERID>\n\n**In-Game Name:** REASON1\n**GUID:** REASON2\n**Description:** REASON3",
 			"cantAccess": [],
 			"askQuestions": true,
-			"staffRoles": ["1360329397415972926", "1538968143131578408", "1518411617187135518"],
+			"staffRoles": ["1360329397415972926", "1518411617187135518"],
 			"blockedRoles": ["1497062984848248983", "1497064031259984033", "1499237354324492378", "1497061513175765003", "1497062741125627935", "1499237259109601363"],
 			"questions": [
 				{
