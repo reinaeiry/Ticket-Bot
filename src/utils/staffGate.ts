@@ -22,13 +22,34 @@ import { ExtendedClient } from "../structure";
 export function hasPanelAccess(
 	client: ExtendedClient,
 	member: GuildMember | null,
-	panelCodeName: string
+	panelCodeName: string,
+	opts: { includeGlobalStaffRole?: boolean } = {}
 ): boolean {
 	if (!member) return false;
+	const { includeGlobalStaffRole = true } = opts;
 
-	const allowed = new Set<string>(client.config.rolesWhoHaveAccessToTheTickets ?? []);
+	const allowed = new Set<string>(
+		includeGlobalStaffRole ? client.config.rolesWhoHaveAccessToTheTickets ?? [] : []
+	);
 	const panel = client.config.ticketTypes?.find((t) => t.codeName === panelCodeName);
 	for (const roleId of panel?.staffRoles ?? []) allowed.add(roleId);
 
 	return member.roles.cache.some((r) => allowed.has(r.id));
+}
+
+/**
+ * Strictest gate available: the panel's OWN staffRoles only, with the global
+ * staff role deliberately excluded.
+ *
+ * For `shop-support` that is the Founder role and nothing else. Used by
+ * /refund, because moving money is not something the global staff role
+ * (Global Admin) should be able to do just by virtue of seeing every ticket.
+ * Still config-driven, so widening it later is a config.jsonc edit.
+ */
+export function hasPanelAccessStrict(
+	client: ExtendedClient,
+	member: GuildMember | null,
+	panelCodeName: string
+): boolean {
+	return hasPanelAccess(client, member, panelCodeName, { includeGlobalStaffRole: false });
 }

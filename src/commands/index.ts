@@ -21,6 +21,7 @@ import BlanketAssignRoleCommand from "./blanketassignrole";
 import AddSurvivorsCommand from "./addsurvivors";
 import BillingCommand from "./billing";
 import RelinkCommand from "./relink";
+import RefundCommand from "./refund";
 
 export {
 	AddCommand,
@@ -46,4 +47,5 @@ export {
 	AddSurvivorsCommand,
 	BillingCommand,
 	RelinkCommand,
+	RefundCommand,
 };
