@@ -107,6 +107,12 @@ export default class RelinkCommand extends BaseCommand {
 			return;
 		}
 
+		// Acknowledge before posting. Discord kills an unacknowledged interaction
+		// after 3 seconds, and channel.send() can sit longer than that behind a
+		// rate limit — which would leave the approval message posted and the
+		// requester told nothing.
+		await interaction.deferReply({ ephemeral: true });
+
 		const deadline = Math.floor((now + RELINK_APPROVAL_TTL_MS) / 1000);
 
 		const embed = new EmbedBuilder()
@@ -137,20 +143,18 @@ export default class RelinkCommand extends BaseCommand {
 				allowedMentions: { parse: [] },
 			});
 		} catch (e) {
-			await interaction.reply({
+			await interaction.editReply({
 				content: `I couldn't post the approval request here: ${(e as Error).message}`,
-				ephemeral: true,
 			});
 			return;
 		}
 
 		lastRequest.set(interaction.user.id, now);
 
-		await interaction.reply({
+		await interaction.editReply({
 			content:
 				`Asked. A Founder has to approve it — nothing exists until they do.\n` +
 				`If they approve, **I'll DM you the link**, so make sure your DMs from this server are open.`,
-			ephemeral: true,
 		});
 	}
 }
