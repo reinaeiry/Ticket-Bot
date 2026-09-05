@@ -15,6 +15,7 @@ import { close } from "../utils/close";
 import { claim } from "../utils/claim";
 import { closeAskReason } from "../utils/close_askReason";
 import { deleteTicket } from "../utils/delete";
+import { handleRelinkApproval, isRelinkApprovalButton } from "../utils/relinkApproval";
 import { BaseEvent, ExtendedClient } from "../structure";
 
 /*
@@ -46,6 +47,14 @@ export default class InteractionCreateEvent extends BaseEvent {
 		}
 
 		if (interaction.isButton()) {
+			// Founder approval for /relink. Handled first and returned out of,
+			// because it is the only button here whose customId carries state
+			// rather than being a fixed string.
+			if (isRelinkApprovalButton(interaction.customId)) {
+				await handleRelinkApproval(interaction, this.client);
+				return;
+			}
+
 			if (interaction.customId === "openTicket") {
 				await interaction.deferReply({ ephemeral: true }).catch((e) => console.log(e));
 
