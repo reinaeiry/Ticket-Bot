@@ -151,6 +151,11 @@ export default class RelinkCommand extends BaseCommand {
 			return;
 		}
 
+		// Drop anyone already past their cooldown. Without this the map keeps one
+		// entry per member who has ever run the command, for the life of the process.
+		for (const [id, at] of lastRequest) {
+			if (now - at >= REQUEST_COOLDOWN_MS) lastRequest.delete(id);
+		}
 		lastRequest.set(interaction.user.id, now);
 
 		await interaction.editReply({

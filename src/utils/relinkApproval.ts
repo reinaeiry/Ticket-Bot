@@ -37,6 +37,16 @@ const SEP = "|";
 /** How long the Yes/No buttons stay answerable. Matches the link TTL. */
 export const RELINK_APPROVAL_TTL_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * How the approval window reads in player-facing copy. Derived from the
+ * constant rather than written out, so changing the window cannot leave the
+ * expiry message quietly claiming the old number.
+ */
+function approvalWindowLabel(): string {
+	const minutes = Math.round(RELINK_APPROVAL_TTL_MS / 60_000);
+	return minutes >= 120 ? `${Math.round(minutes / 60)} hours` : `${minutes} minutes`;
+}
+
 /** Keeps the customId inside Discord's 100-character limit. */
 export const RELINK_TARGET_MAX = 60;
 
@@ -192,7 +202,7 @@ export async function handleRelinkApproval(
 						.setTitle("Console re-link request — expired")
 						.setColor(0x95a5a6)
 						.setDescription(
-							`<@${parsed.requesterId}> asked for a re-link for **${parsed.target}**, but nobody answered within 24 hours.\nNothing was issued. Run \`/relink\` again if it is still needed.`
+							`<@${parsed.requesterId}> asked for a re-link for **${parsed.target}**, but nobody answered within ${approvalWindowLabel()}.\nNothing was issued. Run \`/relink\` again if it is still needed.`
 						),
 				],
 				components: [buildApprovalRow(parsed.requesterId, parsed.deadline, parsed.target, true)],
