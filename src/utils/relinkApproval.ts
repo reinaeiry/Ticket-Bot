@@ -5,6 +5,7 @@ import {
 	ButtonStyle,
 	EmbedBuilder,
 	GuildMember,
+	TextChannel,
 } from "discord.js";
 import { ExtendedClient } from "../structure";
 import { hasPanelAccessStrict } from "./staffGate";
@@ -154,7 +155,9 @@ function linkEmbed(data: RelinkResponse, target: string): EmbedBuilder {
 			{ name: "Uses", value: "One, then it is dead", inline: true }
 		)
 		.setFooter({
-			text: `Approved re-link for ${target}. Treat this like a password — whoever opens it takes the account.`,
+			text:
+				`Approved re-link for ${target}. Treat this like a password — whoever opens it takes the account. ` +
+				`It is posted here, so delete this message once it has been used.`,
 		});
 }
 
@@ -281,18 +284,29 @@ export async function handleRelinkApproval(
 			return;
 		}
 
-		// The link goes to the requester by DM, never into the channel. Everyone
-		// who can read a shop ticket is trusted, but the transcript of it
-		// outlives the ticket and is served from the archive.
+		// Owner's call (2026-09-10): the link is posted into the channel the
+		// request was made in, rather than DMed. In a ticket that is precisely the
+		// right audience - the player who asked and the staff already there - and
+		// it removes the "your DMs are closed" dead end. It is still a credential,
+		// so it goes out as its OWN message: staff can delete it once it has been
+		// used without also deleting the record of who approved what.
 		let delivered = false;
 		let deliveryNote: string;
+		const channel = interaction.channel as TextChannel | null;
 		try {
-			const requester = await client.users.fetch(parsed.requesterId);
-			await requester.send({ embeds: [linkEmbed(data, parsed.target)] });
+			if (!channel || typeof channel.send !== "function") {
+				throw new Error("this channel cannot be posted to");
+			}
+			await channel.send({
+				content: `<@${parsed.requesterId}> - your re-link is ready.`,
+				embeds: [linkEmbed(data, parsed.target)],
+				// Ping the requester and nobody else.
+				allowedMentions: { users: [parsed.requesterId] },
+			});
 			delivered = true;
-			deliveryNote = `Sent to <@${parsed.requesterId}> by DM.`;
+			deliveryNote = `Posted in this channel for <@${parsed.requesterId}>.`;
 		} catch (e) {
-			deliveryNote = `⚠️ Could not DM <@${parsed.requesterId}> (${(e as Error).message.slice(
+			deliveryNote = `⚠️ Could not post it here (${(e as Error).message.slice(
 				0,
 				120
 			)}). It is in the ephemeral message only you can see — pass it on yourself.`;
@@ -302,7 +316,7 @@ export async function handleRelinkApproval(
 			"APPROVED",
 			parsed,
 			founder,
-			`platform=${data.platform} expiresAt=${data.expiresAt} dm=${delivered}`
+			`platform=${data.platform} expiresAt=${data.expiresAt} posted=${delivered}`
 		);
 
 		await interaction.editReply({
@@ -326,12 +340,12 @@ export async function handleRelinkApproval(
 			components: [disabledRow],
 		});
 
-		// Only ever shown when the DM bounced, so the link still reaches a human
-		// without being written into the channel.
+		// Only ever shown when posting to the channel failed, so an approved
+		// link still reaches a human instead of being silently lost.
 		if (!delivered) {
 			await interaction
 				.followUp({
-					content: `Their DMs are closed. Hand this to <@${parsed.requesterId}> yourself:\n${"```"}${
+					content: `I could not post it in the channel. Hand this to <@${parsed.requesterId}> yourself:\n${"```"}${
 						data.url
 					}${"```"}`,
 					ephemeral: true,

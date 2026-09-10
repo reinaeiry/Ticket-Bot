@@ -122,7 +122,7 @@ export default class RelinkCommand extends BaseCommand {
 				[
 					`<@${interaction.user.id}> is asking for a re-link link for **${raw}**.`,
 					"",
-					"**Nothing has been generated.** A Founder has to press Yes first — only then does a link exist, and it goes to the person who asked, by DM.",
+					"**Nothing has been generated.** A Founder has to press Yes first — only then does a link exist, and it is posted here in this channel.",
 				].join("\n")
 			)
 			.addFields(
@@ -131,7 +131,9 @@ export default class RelinkCommand extends BaseCommand {
 				{ name: "Request expires", value: `<t:${deadline}:R>`, inline: true }
 			)
 			.setFooter({
-				text: "Founders only. Check they are who they say they are before approving — a gamertag is public.",
+				text:
+					"Founders only. Approving posts the link IN THIS CHANNEL, where anyone who can read it can take the account. " +
+					"Check they are who they say they are first — a gamertag is public.",
 			});
 
 		try {
@@ -154,7 +156,7 @@ export default class RelinkCommand extends BaseCommand {
 		await interaction.editReply({
 			content:
 				`Asked. A Founder has to approve it — nothing exists until they do.\n` +
-				`If they approve, **I'll DM you the link**, so make sure your DMs from this server are open.`,
+				`If they approve, **the link is posted right here** for you.`,
 		});
 	}
 }
