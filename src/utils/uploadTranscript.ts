@@ -3,6 +3,26 @@ import { Collection, Message, TextChannel } from "discord.js";
 
 export const TRANSCRIPT_DOMAIN = "https://transcripts.reforgedz.net";
 
+// A re-link URL is an account-takeover credential: opening it signs that browser
+// into the account. /relink posts one into the ticket channel deliberately, and
+// that is an accepted decision - but the transcript is a SECOND copy, on another
+// host, that outlives the channel. Support-category transcripts are served to
+// anyone holding the share link, and close.ts posts that link in-channel and DMs
+// it to the ticket creator. An unclicked token stays valid for its full TTL, so a
+// ticket closed before the player clicks would otherwise publish a working
+// credential that no later Discord message-delete can reach.
+//
+// Redact at the export boundary rather than at the post: that covers the bot's own
+// embed, a staff member pasting the link a second time, and anything added later.
+const CREDENTIAL_PATTERNS: RegExp[] = [/(console-relink[?]token=)[A-Za-z0-9_-]+/gi];
+
+function redactCredentials<T extends string | null | undefined>(value: T): T {
+	if (typeof value !== "string" || value.length === 0) return value;
+	let out: string = value;
+	for (const re of CREDENTIAL_PATTERNS) out = out.replace(re, "$1[REDACTED]");
+	return out as T;
+}
+
 export type TranscriptUploadInput = {
 	ticketId: number;
 	channel: TextChannel;
@@ -51,14 +71,14 @@ export async function uploadTranscript(input: TranscriptUploadInput): Promise<st
 			avatar: msg.author.displayAvatarURL({ size: 64 }),
 			bot: msg.author.bot,
 		},
-		content: msg.content,
+		content: redactCredentials(msg.content),
 		timestamp: msg.createdAt.toISOString(),
 		embeds: msg.embeds.map((e) => ({
-			title: e.title,
-			description: e.description,
+			title: redactCredentials(e.title),
+			description: redactCredentials(e.description),
 			color: e.color,
-			fields: e.fields,
-			footer: e.footer,
+			fields: (e.fields ?? []).map((f) => ({ ...f, value: redactCredentials(f.value) })),
+			footer: e.footer ? { ...e.footer, text: redactCredentials(e.footer.text) } : e.footer,
 			thumbnail: e.thumbnail,
 			image: e.image,
 			author: e.author ? { name: e.author.name, iconURL: e.author.iconURL } : undefined,
