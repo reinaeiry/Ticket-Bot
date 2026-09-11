@@ -1,5 +1,6 @@
-import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, CommandInteraction, User } from "discord.js";
+import { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, CommandInteraction, User, GuildMember } from "discord.js";
 import {BaseCommand, ExtendedClient} from "../structure";
+import {canManageTicketMembers} from "../utils/staffGate";
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -20,12 +21,15 @@ export default class RemoveCommand extends BaseCommand {
 		const ticket = await this.client.prisma.tickets.findUnique({
 			select: {
 				invited: true,
+				creator: true,
+				category: true,
 			},
 			where: {
 				channelid: interaction.channel?.id
 			}
 		});
 		if (!ticket) return interaction.reply({ content: "Ticket not found", ephemeral: true }).catch((e) => console.log(e));
+		if (!canManageTicketMembers(this.client, interaction.member as GuildMember | null, ticket)) return interaction.reply({ content: "Only the person who opened this ticket, or its staff, can remove people from it.", ephemeral: true }).catch((e) => console.log(e));
 
 		const parseInvited = JSON.parse(ticket.invited) as string[];
 		if (parseInvited.length < 1) return interaction.reply({ content: "There are no users to remove", ephemeral: true }).catch((e) => console.log(e));

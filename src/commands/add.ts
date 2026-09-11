@@ -1,6 +1,7 @@
 import {BaseCommand, ExtendedClient} from "../structure";
-import {ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder, TextChannel, User} from "discord.js";
+import {ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder, TextChannel, User, GuildMember} from "discord.js";
 import {log} from "../utils/logs";
+import {canManageTicketMembers} from "../utils/staffGate";
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -25,6 +26,8 @@ export default class AddCommand extends BaseCommand {
 			select: {
 				id: true,
 				invited: true,
+				creator: true,
+				category: true,
 			},
 			where: {
 				channelid: interaction.channel?.id
@@ -32,6 +35,7 @@ export default class AddCommand extends BaseCommand {
 		});
 
 		if (!ticket) return interaction.reply({ content: "Ticket not found", ephemeral: true }).catch((e) => console.log(e));
+		if (!canManageTicketMembers(this.client, interaction.member as GuildMember | null, ticket)) return interaction.reply({ content: "Only the person who opened this ticket, or its staff, can add people to it.", ephemeral: true }).catch((e) => console.log(e));
 
 		const invited = JSON.parse(ticket.invited) as string[];
 		if (invited.includes(added.id)) return interaction.reply({ content: "User already added", ephemeral: true }).catch((e) => console.log(e));

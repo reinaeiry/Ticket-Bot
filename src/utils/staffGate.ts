@@ -53,3 +53,32 @@ export function hasPanelAccessStrict(
 ): boolean {
 	return hasPanelAccess(client, member, panelCodeName, { includeGlobalStaffRole: false });
 }
+
+/**
+ * Who may add people to a ticket or remove them: the member who opened it, or
+ * staff for that ticket's own panel (the same set hasPanelAccess admits).
+ *
+ * /add, /remove and the removeUser menu had no check at all. Anyone who could
+ * type in a ticket -- someone merely added to it included -- could pull in any
+ * member, who then reads the whole history, and could operate a remove menu that
+ * is posted in the channel for everyone. The creator adding a friend and staff
+ * managing a ticket both still work.
+ *
+ * A category that fails to parse admits the creator and the global staff role
+ * only, rather than throwing mid-interaction.
+ */
+export function canManageTicketMembers(
+	client: ExtendedClient,
+	member: GuildMember | null,
+	ticket: { creator: string; category: string }
+): boolean {
+	if (!member) return false;
+	if (member.id === ticket.creator) return true;
+	let codeName = "";
+	try {
+		codeName = (JSON.parse(ticket.category) as { codeName?: string }).codeName ?? "";
+	} catch {
+		codeName = "";
+	}
+	return hasPanelAccess(client, member, codeName);
+}

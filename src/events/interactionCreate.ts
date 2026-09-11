@@ -17,6 +17,7 @@ import { closeAskReason } from "../utils/close_askReason";
 import { deleteTicket } from "../utils/delete";
 import { handleRelinkApproval, isRelinkApprovalButton } from "../utils/relinkApproval";
 import { BaseEvent, ExtendedClient } from "../structure";
+import {canManageTicketMembers} from "../utils/staffGate";
 
 /*
 Copyright 2023 Sayrix (github.com/Sayrix)
@@ -214,11 +215,25 @@ export default class InteractionCreateEvent extends BaseEvent {
 					select: {
 						id: true,
 						invited: true,
+						creator: true,
+						category: true,
 					},
 					where: {
 						channelid: interaction.message.channelId,
 					},
 				});
+				if (!ticket) {
+					await interaction.reply({ content: "Ticket not found", ephemeral: true }).catch((e) => console.log(e));
+					return;
+				}
+				// The menu is posted in the channel, so anyone there can operate it; the /remove
+				// command's own check does not cover this interaction.
+				if (!canManageTicketMembers(this.client, interaction.member as GuildMember | null, ticket)) {
+					await interaction
+						.reply({ content: "Only the person who opened this ticket, or its staff, can remove people from it.", ephemeral: true })
+						.catch((e) => console.log(e));
+					return;
+				}
 				for (const value of interaction.values) {
 					await (interaction.channel as GuildChannel | null)?.permissionOverwrites.delete(value).catch((e) => console.log(e));
 					await log(
