@@ -56,7 +56,11 @@ export function hasPanelAccessStrict(
 
 /**
  * Who may add people to a ticket or remove them: the member who opened it, or
- * staff for that ticket's own panel (the same set hasPanelAccess admits).
+ * the staff roles that ticket's own panel names -- the same set that can see the
+ * channel. The global staff role alone does not count. Since 40b8fba it no
+ * longer grants channel access to panels that do not list it (Shop Support,
+ * Contact Management, the applications), so it must not let anyone add people
+ * to those tickets either.
  *
  * /add, /remove and the removeUser menu had no check at all. Anyone who could
  * type in a ticket -- someone merely added to it included -- could pull in any
@@ -64,8 +68,8 @@ export function hasPanelAccessStrict(
  * is posted in the channel for everyone. The creator adding a friend and staff
  * managing a ticket both still work.
  *
- * A category that fails to parse admits the creator and the global staff role
- * only, rather than throwing mid-interaction.
+ * A category that fails to parse admits the creator only, rather than throwing
+ * mid-interaction.
  */
 export function canManageTicketMembers(
 	client: ExtendedClient,
@@ -80,5 +84,5 @@ export function canManageTicketMembers(
 	} catch {
 		codeName = "";
 	}
-	return hasPanelAccess(client, member, codeName);
+	return hasPanelAccessStrict(client, member, codeName);
 }
