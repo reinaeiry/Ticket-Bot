@@ -59,6 +59,22 @@ export default class RelinkCommand extends BaseCommand {
 			return;
 		}
 
+		// Only inside an open ticket. Approving posts a live account-takeover link
+		// into this channel, and a ticket is the one place whose audience is just the
+		// player and the staff handling it. In any other channel the link would reach
+		// everyone who can read it.
+		const ticket = await this.client.prisma.tickets.findUnique({
+			select: { id: true, closedat: true },
+			where: { channelid: interaction.channelId },
+		});
+		if (!ticket || ticket.closedat) {
+			await interaction.reply({
+				content: "Run `/relink` inside your open ticket, so the link only reaches you and the staff handling it.",
+				ephemeral: true,
+			});
+			return;
+		}
+
 		// Fail on a missing key here rather than after a Founder has approved:
 		// approving something that then cannot be issued wastes their time.
 		if (!SHOP_ADMIN_API_KEY) {

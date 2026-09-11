@@ -51,12 +51,26 @@ function approvalWindowLabel(): string {
 export const RELINK_TARGET_MAX = 60;
 
 /**
- * Messages currently being acted on, so two Founders pressing Yes in the same
- * instant cannot both reach the mint endpoint. Best-effort only — the real
- * guarantee is the shop, which retires any earlier unused token when it issues
- * a new one, so at most one link is ever live for a player.
+ * Approval messages that have already been answered, Yes or No. Claimed
+ * synchronously, before the first await on either branch, so the first press
+ * wins and anything racing it -- including a No against a Yes -- is turned
+ * away. Previously only Yes took a lock, so a No and a Yes dispatched together
+ * could both act and leave the record saying "denied" beside a posted link.
+ * The shop still retires any earlier unused token on issue, so at most one link
+ * is ever live per player regardless. Entries older than the approval window are
+ * dropped on write; by then the buttons are disabled in Discord anyway.
  */
-const inFlight = new Set<string>();
+const decided = new Map<string, number>();
+
+function claimDecision(messageId: string): boolean {
+	const nowMs = Date.now();
+	for (const [id, at] of decided) {
+		if (nowMs - at > RELINK_APPROVAL_TTL_MS) decided.delete(id);
+	}
+	if (decided.has(messageId)) return false;
+	decided.set(messageId, nowMs);
+	return true;
+}
 
 export interface RelinkResponse {
 	ok: boolean;
@@ -211,9 +225,11 @@ export async function handleRelinkApproval(
 		return;
 	}
 
-	if (inFlight.has(interaction.message.id)) {
+	// First press wins, Yes or No. Nothing above this line awaits for a Founder,
+	// so the claim cannot interleave with another press.
+	if (!claimDecision(interaction.message.id)) {
 		await interaction
-			.reply({ content: "Someone is already answering this request.", ephemeral: true })
+			.reply({ content: "This request has already been answered.", ephemeral: true })
 			.catch((e) => console.log(e));
 		return;
 	}
@@ -242,7 +258,6 @@ export async function handleRelinkApproval(
 		return;
 	}
 
-	inFlight.add(interaction.message.id);
 	try {
 		// Disable the buttons FIRST. The token does not exist yet, so a second
 		// press landing here would mint a second one; taking the buttons away
@@ -360,11 +375,12 @@ export async function handleRelinkApproval(
 					}${"```"}`,
 					ephemeral: true,
 				})
-				.catch((e) => console.log(e));
+				// Never log the error object here: a discord.js API error carries the
+				// request body, and the content of this request IS the credential.
+				.catch((e) => console.log("[relink-approval] fallback hand-off failed:", (e as Error)?.message));
 		}
 	} catch (e) {
-		console.error("[relink-approval] handler error:", e);
-	} finally {
-		inFlight.delete(interaction.message.id);
+		// The stack only: an API error object carries its request body.
+		console.error("[relink-approval] handler error:", (e as Error)?.stack ?? String(e));
 	}
 }

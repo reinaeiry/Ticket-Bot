@@ -7,6 +7,17 @@
 
 const RELAY_AUTHOR_SUFFIX = " · admin relay";
 
+// Account-takeover credentials must not be mirrored to the admin panel. The
+// link the bot posts for /relink sits in an embed description, which this mapper
+// does not carry, but a staff member re-pasting that link as plain text would be
+// published live over SSE and through the internal messages API. Same pattern
+// as src/utils/uploadTranscript.ts, which scrubs the transcript export.
+const CREDENTIAL_PATTERN = /(console-relink[?]token=)[A-Za-z0-9_-]+/gi;
+
+function redactCredentials(text) {
+	return typeof text === "string" && text ? text.replace(CREDENTIAL_PATTERN, "$1[REDACTED]") : text;
+}
+
 function isRelayEmbed(embed) {
 	return !!(embed?.author?.name && embed.author.name.endsWith(RELAY_AUTHOR_SUFFIX));
 }
@@ -35,7 +46,7 @@ function mapMessage(msg, botUserId) {
 	return {
 		id: msg.id,
 		ts: msg.createdTimestamp,
-		content,
+		content: redactCredentials(content),
 		author: {
 			discordId: msg.author?.id || null,
 			name: isAdminRelay && relayUsername ? relayUsername : (msg.author?.tag || "?"),
