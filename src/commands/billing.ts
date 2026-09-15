@@ -42,7 +42,16 @@ interface BillingResponse {
 		running: boolean;
 		startedAt: number | null;
 		finishedAt: number | null;
-		summary: { scanned: number; failing: number; newIssues: number; resolved: number; errors: number } | null;
+		summary: {
+			scanned: number;
+			failing: number;
+			newIssues: number;
+			resolved: number;
+			errors: number;
+			ended?: number;
+			refused?: boolean;
+			dryRun?: boolean;
+		} | null;
 		error: string | null;
 	};
 }
@@ -50,6 +59,8 @@ interface BillingResponse {
 async function shopFetch(path: string, init?: RequestInit) {
 	const res = await fetch(`${SHOP_BASE_URL}${path}`, {
 		...init,
+		// Bounds every call, so the rescan poll's deadline holds whatever the URL.
+		signal: init?.signal ?? AbortSignal.timeout(15_000),
 		headers: {
 			"Content-Type": "application/json",
 			"x-shop-admin-key": SHOP_ADMIN_API_KEY,
@@ -72,13 +83,7 @@ export default class BillingCommand extends BaseCommand {
 		.addSubcommand((sub) =>
 			sub
 				.setName("rescan")
-				.setDescription("Re-check every live subscription against PayPal")
-				.addBooleanOption((opt) =>
-					opt
-						.setName("email-players")
-						.setDescription("Also email affected players (default: no)")
-						.setRequired(false)
-				)
+				.setDescription("Ask PayPal about every live subscription again (only checks)")
 		) as unknown as SlashCommandBuilder;
 
 	constructor(client: ExtendedClient) {
@@ -175,12 +180,14 @@ export default class BillingCommand extends BaseCommand {
 	}
 
 	private async rescan(interaction: ChatInputCommandInteraction): Promise<void> {
-		const emailPlayers = interaction.options.getBoolean("email-players") === true;
-
+		// The shop's rescan only checks unless it is sent { end: true }, which only
+		// the admin orders page sends, after a confirm. From here nothing is ended and
+		// no player is emailed; the shop's own daily PayPal check ends unpaid
+		// subscriptions.
 		try {
 			const res = await shopFetch("/api/shop/admin/billing-issues/rescan", {
 				method: "POST",
-				body: JSON.stringify({ emailPlayers }),
+				body: JSON.stringify({}),
 			});
 			if (res.status === 409) {
 				await interaction.editReply({ content: "A rescan is already running." });
@@ -195,9 +202,7 @@ export default class BillingCommand extends BaseCommand {
 		}
 
 		await interaction.editReply({
-			content: emailPlayers
-				? "Rescanning every live subscription against PayPal. **Affected players will be emailed.** This takes a minute or two…"
-				: "Rescanning every live subscription against PayPal. No player emails will be sent. This takes a minute or two…",
+			content: "Asking PayPal about every live subscription. This only checks: nothing is ended and no player is emailed. It takes a minute or two…",
 		});
 
 		// Poll until it finishes so the channel gets the result rather than
@@ -221,18 +226,47 @@ export default class BillingCommand extends BaseCommand {
 				return;
 			}
 			const s = data.rescan.summary;
+			// The shop keeps no result across a restart: a rescan that was running
+			// comes back as not running, with no summary and no error.
+			if (!s) {
+				await interaction.editReply({
+					content: "The rescan's result was lost, probably because the shop restarted during the check. Nothing was ended. Run `/billing rescan` again.",
+				});
+				return;
+			}
+			// The shop keeps one rescan state, so the one that finished last can be a
+			// rescan the admin orders page started after this one, which does end
+			// subscriptions and email their players.
+			const endedRun = s.dryRun === false;
+			const ended = s.ended ?? 0;
+			const description = endedRun
+				? `A rescan started from the admin orders page finished after this one. It ended ${ended} unpaid subscription${ended === 1 ? "" : "s"} and emailed their players.`
+				: s.refused
+					? s.errors
+						? "Some PayPal lookups failed, so the failing count may be short. Run it again in a few minutes."
+						: "The check could not finish, so the failing count may be short. Run it again in a few minutes."
+					: "Nothing was ended and no player was emailed.";
+			// A failing subscription whose PayPal notice was missed is counted here but
+			// is not on the list until the daily 08:30 UTC check records it.
+			const unlisted = !endedRun && !s.refused ? Math.max(0, s.failing - data.openCount) : 0;
 			const embed = new EmbedBuilder()
 				.setTitle("Rescan complete")
-				.setColor(data.openCount ? 0xf87171 : 0x4ade80)
+				.setDescription(description)
+				.setColor(s.failing || data.openCount ? 0xf87171 : 0x4ade80)
 				.addFields(
-					{ name: "Checked", value: String(s?.scanned ?? 0), inline: true },
-					{ name: "Failing", value: String(s?.failing ?? 0), inline: true },
-					{ name: "Newly found", value: String(s?.newIssues ?? 0), inline: true },
-					{ name: "Resolved", value: String(s?.resolved ?? 0), inline: true },
-					{ name: "Lookup errors", value: String(s?.errors ?? 0), inline: true },
-					{ name: "Uncollected", value: money(data.outstandingCents), inline: true }
+					{ name: "Checked", value: String(s.scanned), inline: true },
+					{ name: "Failing at PayPal", value: String(s.failing), inline: true },
+					{ name: "Cleared from the list", value: String(s.resolved), inline: true },
+					{ name: "Lookup errors", value: String(s.errors), inline: true },
+					{ name: "Still on the list", value: String(data.openCount), inline: true },
+					{ name: "Uncollected", value: money(data.outstandingCents), inline: true },
+					...(endedRun ? [{ name: "Ended", value: String(ended), inline: true }] : [])
 				)
-				.setFooter({ text: "Use /billing list for the detail." })
+				.setFooter({
+					text: unlisted
+						? `${unlisted} failing at PayPal ${unlisted === 1 ? "is" : "are"} not on /billing list yet (PayPal's notice was missed). The 08:30 UTC check ends the priority queue ones and lists the rest.`
+						: "Use /billing list for the detail.",
+				})
 				.setTimestamp();
 			await interaction.editReply({ content: "", embeds: [embed] });
 			return;

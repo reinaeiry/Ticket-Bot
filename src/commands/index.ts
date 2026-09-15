@@ -22,6 +22,7 @@ import AddSurvivorsCommand from "./addsurvivors";
 import BillingCommand from "./billing";
 import RelinkCommand from "./relink";
 import RefundCommand from "./refund";
+import HealthCommand from "./health";
 
 export {
 	AddCommand,
@@ -48,4 +49,5 @@ export {
 	BillingCommand,
 	RelinkCommand,
 	RefundCommand,
+	HealthCommand,
 };
